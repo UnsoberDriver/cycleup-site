@@ -31,7 +31,9 @@ export function Header() {
         <nav aria-label="Navigation principale" className="hidden items-center gap-1 lg:flex">
           {PRIMARY_NAV.map((item) => {
             const isActive =
-              item.section === 'partie-1'
+              item.section === 'accueil'
+                ? location.pathname === '/'
+                : item.section === 'partie-1'
                 ? projectDetailPaths.includes(location.pathname)
                 : item.section === 'partie-2'
                   ? location.pathname === '/partie-2/'

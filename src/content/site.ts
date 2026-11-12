@@ -7,6 +7,7 @@ export const SITE = {
 }
 
 export const PRIMARY_NAV = [
+  { label: 'Accueil', sub: 'Retour à la page d’accueil', path: '/', section: 'accueil' },
   { label: 'Projets', sub: 'Les cas documentés', path: '/partie-1/', section: 'partie-1' },
   { label: 'Carte', sub: 'Localisation des rosalies', path: '/partie-2/', section: 'partie-2' },
   { label: 'Forum', sub: 'Discussions ouvertes', path: '/ressources/', section: 'ressources' },
