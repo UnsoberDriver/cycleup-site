@@ -10,63 +10,41 @@ const MODELS = [
 
 type ModelId = (typeof MODELS)[number]['id']
 
-/** Fiche technique et sources, affichées à côté du modèle uniquement en plein écran. */
+/** Fiche technique et sources, affichées à côté du modèle uniquement en plein écran.
+ *  Compacte par conception : tout doit tenir à l'écran, sans défilement. */
 function InfoPanel({ variant }: { variant: ModelId }) {
   const current = MODELS.find((m) => m.id === variant) ?? MODELS[0]
   return (
-    <aside className="w-full shrink-0 overflow-y-auto border-t border-rule bg-paper p-5 md:h-full md:w-[370px] md:border-l md:border-t-0 md:p-7 lg:w-[420px]">
-      <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-commun">Fiche technique</p>
-      <h3 className="mt-2 font-serif text-[1.45rem] leading-tight font-medium tracking-[-0.02em]">Le Vhéliotech en bref</h3>
+    <aside className="w-full shrink-0 bg-paper p-4 md:h-full md:w-[400px] md:overflow-hidden md:border-l md:border-rule md:p-6 lg:w-[460px]">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-commun">Fiche technique</p>
+      <h3 className="mt-1.5 font-serif text-[1.3rem] leading-tight font-medium tracking-[-0.02em]">Le Vhéliotech en bref</h3>
 
-      <p className="mt-4 text-[0.95rem] leading-[1.7] text-ink-soft">
-        <Inline text="Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues — convivialité, effort doux et plaisir de rouler à plusieurs." />
-      </p>
-      <p className="mt-3 text-[0.95rem] leading-[1.7] text-ink-soft">
+      <p className="mt-2.5 text-[0.82rem] leading-[1.5] text-ink-soft">
         <Inline
-          text={`Le Vhéliotech est un vélo-car utilitaire à trois roues et à assistance électrique, conçu pour être **autoconstruit** : ses plans, son guide de montage et sa nomenclature sont téléchargeables gratuitement sous licence libre (CERN-OHL-S v2). Sa géométrie vient directement des fichiers de conception officiels, convertis ici pour le web. Configuration affichée : **${current.label.toLowerCase()}** — ${current.note.toLowerCase()}.`}
+          text={`Une **rosalie** est un vélo collectif à pédales (2 à 9 places, 3 ou 4 roues). Le Vhéliotech, affiché ici en configuration **${current.label.toLowerCase()}** (${current.note.toLowerCase()}), est un vélo-car à trois roues **autoconstructible** : plans et guide de montage libres (CERN-OHL-S v2) via [communaute.vhelio.org](https://communaute.vhelio.org).`}
         />
       </p>
 
-      <dl className="mt-5 divide-y divide-rule overflow-hidden rounded-xl border border-rule text-[0.9rem]">
+      <dl className="mt-3 divide-y divide-rule overflow-hidden rounded-lg border border-rule text-[0.78rem]">
         {[
-          ['Dimensions', '207 cm de long · 85 cm de large · 160 cm de haut'],
+          ['Dimensions', '207 × 85 × 160 cm'],
           ['Poids à vide', '≈ 85 kg'],
-          ['Charge utile', '200 kg (conducteur et passagers inclus)'],
-          ['Embarquement', '2 adultes et 2 enfants ; conducteur de 150 à 210 cm'],
-          ['Roues', '3 (une arrière : mécanique de vélo standard)'],
-          ['Assistance', 'limitée à 25 km/h — reste un vélo au sens du code de la route'],
-          ['Autonomie', '25 km par batterie, + 8 km par heure de plein soleil (panneau solaire)'],
+          ['Charge utile', '200 kg (passagers inclus)'],
+          ['Embarquement', '2 adultes + 2 enfants · conducteur 150–210 cm'],
+          ['Roues', '3 — mécanique de vélo standard'],
+          ['Assistance', '25 km/h max — reste un vélo'],
+          ['Autonomie', '25 km/batterie · +8 km/h de soleil'],
         ].map(([dt, dd]) => (
-          <div key={dt} className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 px-4 py-2.5">
-            <dt className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted">{typo(dt)}</dt>
+          <div key={dt} className="grid grid-cols-[5.6rem_minmax(0,1fr)] gap-2 px-3 py-[0.35rem]">
+            <dt className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-muted">{typo(dt)}</dt>
             <dd className="leading-snug text-ink-soft">{typo(dd)}</dd>
           </div>
         ))}
       </dl>
 
-      <p className="mt-4 text-[0.9rem] leading-[1.7] text-ink-soft">
-        <Inline text="Sans assistance ni moteur, la rosalie reste un vélo à pédales, sans homologation ni permis, qui roule partout où passe un vélo. Le projet est un commun numérique : plans, documentation et communauté d’entraide sont ouverts sur [communaute.vhelio.org](https://communaute.vhelio.org)." />
+      <p className="mt-3 text-[0.78rem] leading-[1.45] text-muted">
+        <Inline text="Sources : [fiche Vhéliotech](https://vhelio.fr/objets/vheliotech) · [guide de montage v1.0.0, mai 2023](https://documentation.vhelio.org/vheliotech/guide-de-montage/v1.0.0) · [Fabrique des Mobilités](https://wiki.lafabriquedesmobilites.fr/wiki/Vheliotech) — association Vélo Solaire Pour Tous." />
       </p>
-
-      <p className="mt-5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted">Sources</p>
-      <ul className="mt-2 space-y-2 text-[0.85rem] leading-snug text-ink-soft">
-        <li>
-          <a href="https://vhelio.fr/objets/vheliotech" target="_blank" rel="noreferrer" className="prose-link text-ink">
-            Fiche « Vhéliotech », association Vélo Solaire Pour Tous
-          </a>
-        </li>
-        <li>
-          <a href="https://documentation.vhelio.org/vheliotech/guide-de-montage/v1.0.0" target="_blank" rel="noreferrer" className="prose-link text-ink">
-            Guide de montage du Vhéliotech, v1.0.0, mai 2023
-          </a>{' '}
-          — licence CERN-OHL-S v2
-        </li>
-        <li>
-          <a href="https://wiki.lafabriquedesmobilites.fr/wiki/Vheliotech" target="_blank" rel="noreferrer" className="prose-link text-ink">
-            Page communautaire « Vheliotech », Fabrique des Mobilités
-          </a>
-        </li>
-      </ul>
     </aside>
   )
 }
@@ -120,6 +98,11 @@ export function Rosalie3D() {
         renderer.setSize(width(), height())
         renderer.domElement.setAttribute('aria-hidden', 'true')
         renderer.domElement.style.touchAction = 'none'
+        // Canvas en position absolue : il ne doit jamais influer sur la hauteur du
+        // conteneur (sinon la taille en px du plein écran déborde après la sortie).
+        renderer.domElement.style.position = 'absolute'
+        renderer.domElement.style.inset = '0'
+        renderer.domElement.style.margin = '0 auto'
         host.appendChild(renderer.domElement)
 
         const scene = new THREE.Scene()
@@ -224,6 +207,7 @@ export function Rosalie3D() {
         }
         const ro = new ResizeObserver(onResize)
         ro.observe(host)
+        onResize()
         // Stoppe l'auto-rotation dès que l'utilisateur saisit le modèle.
         const stopSpin = () => {
           controls.autoRotate = false
