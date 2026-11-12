@@ -1,4 +1,63 @@
 import { useEffect, useRef, useState } from 'react'
+import { Inline, typo } from '../lib/inline'
+
+/** Fiche technique et sources, affichées à côté du modèle uniquement en plein écran. */
+function InfoPanel() {
+  return (
+    <aside className="w-full shrink-0 overflow-y-auto border-t border-rule bg-paper p-5 md:h-full md:w-[370px] md:border-l md:border-t-0 md:p-7 lg:w-[420px]">
+      <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-commun">Fiche technique</p>
+      <h3 className="mt-2 font-serif text-[1.45rem] leading-tight font-medium tracking-[-0.02em]">Le Vhéliotech en bref</h3>
+
+      <p className="mt-4 text-[0.95rem] leading-[1.7] text-ink-soft">
+        <Inline text="Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues — convivialité, effort doux et plaisir de rouler à plusieurs." />
+      </p>
+      <p className="mt-3 text-[0.95rem] leading-[1.7] text-ink-soft">
+        <Inline text="Le Vhéliotech est un vélo-car utilitaire à trois roues et à assistance électrique, conçu pour être **autoconstruit** : ses plans, son guide de montage et sa nomenclature sont téléchargeables gratuitement sous licence libre (CERN-OHL-S v2). Sa géométrie vient directement des fichiers de conception officiels, convertis ici pour le web." />
+      </p>
+
+      <dl className="mt-5 divide-y divide-rule overflow-hidden rounded-xl border border-rule text-[0.9rem]">
+        {[
+          ['Dimensions', '207 cm de long · 85 cm de large · 160 cm de haut'],
+          ['Poids à vide', '≈ 85 kg'],
+          ['Charge utile', '200 kg (conducteur et passagers inclus)'],
+          ['Embarquement', '2 adultes et 2 enfants ; conducteur de 150 à 210 cm'],
+          ['Roues', '3 (une arrière : mécanique de vélo standard)'],
+          ['Assistance', 'limitée à 25 km/h — reste un vélo au sens du code de la route'],
+          ['Autonomie', '25 km par batterie, + 8 km par heure de plein soleil (panneau solaire)'],
+        ].map(([dt, dd]) => (
+          <div key={dt} className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 px-4 py-2.5">
+            <dt className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted">{typo(dt)}</dt>
+            <dd className="leading-snug text-ink-soft">{typo(dd)}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className="mt-4 text-[0.9rem] leading-[1.7] text-ink-soft">
+        <Inline text="Sans assistance ni moteur, la rosalie reste un vélo à pédales, sans homologation ni permis, qui roule partout où passe un vélo. Le projet est un commun numérique : plans, documentation et communauté d’entraide sont ouverts sur [communaute.vhelio.org](https://communaute.vhelio.org)." />
+      </p>
+
+      <p className="mt-5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted">Sources</p>
+      <ul className="mt-2 space-y-2 text-[0.85rem] leading-snug text-ink-soft">
+        <li>
+          <a href="https://vhelio.fr/objets/vheliotech" target="_blank" rel="noreferrer" className="prose-link text-ink">
+            Fiche « Vhéliotech », association Vélo Solaire Pour Tous
+          </a>
+        </li>
+        <li>
+          <a href="https://documentation.vhelio.org/vheliotech/guide-de-montage/v1.0.0" target="_blank" rel="noreferrer" className="prose-link text-ink">
+            Guide de montage du Vhéliotech, v1.0.0, mai 2023
+          </a>{' '}
+          — licence CERN-OHL-S v2
+        </li>
+        <li>
+          <a href="https://wiki.lafabriquedesmobilites.fr/wiki/Vheliotech" target="_blank" rel="noreferrer" className="prose-link text-ink">
+            Page communautaire « Vheliotech », Fabrique des Mobilités
+          </a>
+        </li>
+      </ul>
+    </aside>
+  )
+}
 
 /**
  * Interactive 3D viewer of the Vhéliotech rosalie, converted from the official
@@ -156,41 +215,44 @@ export function Rosalie3D() {
       ref={wrapRef}
       className={`modern-surface my-10 overflow-hidden ${fs ? 'flex h-full flex-col' : 'rounded-[1.25rem]'}`}
     >
-      <div
-        ref={hostRef}
-        className={`relative w-full bg-[linear-gradient(180deg,#f6f8f4_0%,#e9efe6_100%)] ${
-          fs ? 'min-h-0 flex-1' : 'aspect-[4/3]'
-        }`}
-        style={{ cursor: state === 'ready' ? 'grab' : 'default' }}
-      >
-        {state !== 'ready' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-            {state === 'loading' ? (
-              <>
-                <span className="h-8 w-8 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
-                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Chargement du modèle 3D…</p>
-              </>
-            ) : (
-              <p className="text-sm text-muted">
-                Le modèle 3D ne peut pas s'afficher sur cet appareil (WebGL indisponible). Les plans restent{' '}
-                <a
-                  href="https://vhelio.fr/objets/vheliotech"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="prose-link text-ink"
-                >
-                  téléchargeables sur vhelio.fr
-                </a>
-                .
-              </p>
-            )}
-          </div>
-        )}
-        {state === 'ready' && (
-          <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-paper/85 px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted backdrop-blur">
-            Glisser : pivoter · Molette / pincer : zoom
-          </span>
-        )}
+      <div className={fs ? 'flex min-h-0 flex-1 flex-col md:flex-row' : undefined}>
+        <div
+          ref={hostRef}
+          className={`relative w-full bg-[linear-gradient(180deg,#f6f8f4_0%,#e9efe6_100%)] ${
+            fs ? 'min-h-0 flex-1' : 'aspect-[4/3]'
+          }`}
+          style={{ cursor: state === 'ready' ? 'grab' : 'default' }}
+        >
+          {state !== 'ready' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+              {state === 'loading' ? (
+                <>
+                  <span className="h-8 w-8 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Chargement du modèle 3D…</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted">
+                  Le modèle 3D ne peut pas s'afficher sur cet appareil (WebGL indisponible). Les plans restent{' '}
+                  <a
+                    href="https://vhelio.fr/objets/vheliotech"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="prose-link text-ink"
+                  >
+                    téléchargeables sur vhelio.fr
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
+          )}
+          {state === 'ready' && (
+            <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-paper/85 px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted backdrop-blur">
+              Glisser : pivoter · Molette / pincer : zoom
+            </span>
+          )}
+        </div>
+        {fs && <InfoPanel />}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-rule px-4 py-2.5 md:px-6">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted">

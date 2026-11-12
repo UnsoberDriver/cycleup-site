@@ -806,32 +806,9 @@ export const aPropos: Page = {
     {
       type: 'p',
       lead: true,
-      text: 'Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues. Née pour les balades de bord de mer et de camping, elle combine convivialité, effort doux et plaisir de rouler à plusieurs — c’est aussi un excellent objet d’expérimentation pour penser la mobilité en territoire peu dense.',
-    },
-    {
-      type: 'p',
-      text: 'Le modèle 3D présenté ci-dessous est celui du **Vhéliotech**, un vélo-car utilitaire à trois roues et à assistance électrique, conçu pour être **autoconstruit** : ses plans, son guide de montage et sa nomenclature sont téléchargeables gratuitement sous licence libre (CERN-OHL-S v2) par l’association Vélo Solaire Pour Tous. Sa géométrie vient directement des fichiers de conception officiels, convertis ici pour le web.',
+      text: 'Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues. Le modèle 3D ci-dessous est celui du **Vhéliotech**, un vélo-car à trois roues construit à partir des plans libres de l’association Vélo Solaire Pour Tous — ouvre-le en **plein écran** pour lire sa fiche complète à côté du modèle.',
     },
     { type: 'viewer', name: 'vheliotech' },
-    {
-      type: 'table',
-      centered: true,
-      head: ['Caractéristique', 'Valeur'],
-      caption: 'Fiche technique du Vhéliotech (association Vélo Solaire Pour Tous, mai 2023).',
-      rows: [
-        ['Dimensions', '207 cm de long · 85 cm de large · 160 cm de haut'],
-        ['Poids à vide', '≈ 85 kg'],
-        ['Charge utile', '200 kg (conducteur et passagers inclus)'],
-        ['Embarquement', '2 adultes et 2 enfants ; conducteur de 150 à 210 cm'],
-        ['Roues', '3 (une arrière : mécanique de vélo standard)'],
-        ['Assistance', 'limitée à 25 km/h — reste un vélo au sens du code de la route'],
-        ['Autonomie', '25 km par batterie, + 8 km par heure de plein soleil (panneau solaire)'],
-      ],
-    },
-    {
-      type: 'p',
-      text: 'Sans assistance ni moteur, la rosalie reste ce qu’elle a toujours été : un vélo à pédales, sans homologation ni permis, qui roule partout où passe un vélo. Le Vhéliotech l’étend à l’usage du quotidien — courses, école, chantiers — avec une charge utile de 200 kg et deux plateformes latérales accueillant des caisses standards. Le projet est un commun numérique : plans, documentation et communauté d’entraide sont ouverts sur [communaute.vhelio.org](https://communaute.vhelio.org).',
-    },
     { type: 'h2', id: 'methode', text: 'Méthode et statuts' },
     {
       type: 'p',
@@ -877,23 +854,6 @@ export const aPropos: Page = {
     {
       type: 'p',
       text: 'Ce site ne dépose aucun cookie de suivi et ne collecte aucune donnée personnelle. La recherche fonctionne entièrement dans votre navigateur. Les URLs ne comportent aucun paramètre de suivi.',
-    },
-  ],
-  sources: [
-    {
-      label: 'Association Vélo Solaire Pour Tous, fiche « Vhéliotech »',
-      url: 'https://vhelio.fr/objets/vheliotech',
-      note: 'Fiche technique complète : dimensions, charge, autonomie.',
-    },
-    {
-      label: 'Association Vélo Solaire Pour Tous, *Guide de montage du Vhéliotech*, v1.0.0, mai 2023',
-      url: 'https://documentation.vhelio.org/vheliotech/guide-de-montage/v1.0.0',
-      note: 'Documentation sous licence CERN-OHL-S version 2.',
-    },
-    {
-      label: 'Fabrique des Mobilités, page communautaire « Vheliotech »',
-      url: 'https://wiki.lafabriquedesmobilites.fr/wiki/Vheliotech',
-      note: 'Présentation du projet comme commun de la communauté.',
     },
   ],
 }
