@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Inline, typo } from '../lib/inline'
 
-/** Les quatre configurations des plans officiels du Vhéliotech. */
+/** Les configurations des plans officiels du Vhéliotech. */
 const MODELS = [
   { id: 'basique', label: 'Basique', file: '/models/vheliotech-basique.glb', note: 'La configuration de départ' },
-  { id: 'integral', label: 'Intégral', file: '/models/vheliotech-integral.glb', note: 'Tous les équipements' },
   { id: 'motorise', label: 'Motorisé', file: '/models/vheliotech-motorise.glb', note: 'Configuration motorisée' },
   { id: 'solaire', label: 'Solaire', file: '/models/vheliotech-solaire.glb', note: 'Avec panneau photovoltaïque' },
 ] as const
@@ -324,6 +323,18 @@ export function Rosalie3D() {
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
                   Chargement…
                 </span>
+              )}
+              {fs && !switching && (
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  aria-label="Quitter le plein écran"
+                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 bg-paper/90 text-ink shadow-sm backdrop-blur transition-colors hover:border-ink/30 hover:bg-commun-soft"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
               )}
             </>
           )}
