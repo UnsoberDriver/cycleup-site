@@ -47,8 +47,8 @@ if ($action === 'delete') {
 
 if ($action === 'setpassword') {
     $password = clean_text($b['password'] ?? '', 200);
-    if (strlen($password) < 8) {
-        json_out(['ok' => false, 'error' => 'Le mot de passe doit faire 8 caractères minimum.'], 422);
+    if (strlen($password) < 1) {
+        json_out(['ok' => false, 'error' => 'Le mot de passe ne peut pas être vide.'], 422);
     }
     if (!save_data('admin.json', ['password_hash' => password_hash($password, PASSWORD_DEFAULT), 'created' => date('c')])) {
         json_out(['ok' => false, 'error' => 'Sauvegarde impossible.'], 500);
