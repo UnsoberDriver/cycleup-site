@@ -8,7 +8,7 @@ export function AdminEditPage() {
   const isAdmin = token ? true : false
 
   if (!isAdmin) {
-    ;(window as any).navigate('/connexion', { replace: true })
+    navigate('/connexion', { replace: true })
     return null
   }
 
