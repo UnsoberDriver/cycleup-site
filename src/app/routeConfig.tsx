@@ -11,7 +11,7 @@ const Chronologie = lazy(() => import('../pages/Resources').then((m) => ({ defau
 const Glossaire = lazy(() => import('../pages/Resources').then((m) => ({ default: m.Glossaire })))
 const Acteurs = lazy(() => import('../pages/Resources').then((m) => ({ default: m.Acteurs })))
 const LoginPage = lazy(() => import('../pages/AdminPrototype').then((m) => ({ default: m.LoginPage })))
-const AdminPage = lazy(() => import('../pages/AdminPrototype').then((m) => ({ default: m.AdminPage })))
+const AdminEditPage = lazy(() => import('../pages/AdminEdit').then((m) => ({ default: m.AdminEditPage })))
 const ContactPage = lazy(() => import('../pages/Contact').then((m) => ({ default: m.ContactPage })))
 const ProjectsPage = lazy(() => import('../pages/ProjectsMap').then((m) => ({ default: m.ProjectsPage })))
 const MapPage = lazy(() => import('../pages/ProjectsMap').then((m) => ({ default: m.MapPage })))
@@ -52,5 +52,5 @@ export const routeConfig: RouteObject[] = [
       ],
     },
     { path: '/connexion', element: defer(<LoginPage />) },
-    { path: '/administration', element: defer(<AdminPage />) },
+    { path: '/administration', element: defer(<AdminEditPage />) },
 ]
