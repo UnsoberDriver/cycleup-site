@@ -806,7 +806,7 @@ export const aPropos: Page = {
     {
       type: 'p',
       lead: true,
-      text: 'Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues. Le modèle 3D ci-dessous est celui du **Vhéliotech**, un vélo-car à trois roues construit à partir des plans libres de l’association Vélo Solaire Pour Tous — ouvre-le en **plein écran** pour lire sa fiche complète à côté du modèle.',
+      text: 'Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues. Le modèle 3D ci-dessous est celui du **Vhéliotech**, un vélo-car à trois roues construit à partir des plans libres de l’association Vélo Solaire Pour Tous — les quatre configurations (basique, intégral, motorisé, solaire) se choisissent sous le modèle, et le mode **plein écran** affiche sa fiche complète à côté.',
     },
     { type: 'viewer', name: 'vheliotech' },
     { type: 'h2', id: 'methode', text: 'Méthode et statuts' },

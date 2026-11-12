@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { Inline, typo } from '../lib/inline'
 
+/** Les quatre configurations des plans officiels du Vhéliotech. */
+const MODELS = [
+  { id: 'basique', label: 'Basique', file: '/models/vheliotech-basique.glb', note: 'La configuration de départ' },
+  { id: 'integral', label: 'Intégral', file: '/models/vheliotech-integral.glb', note: 'Tous les équipements' },
+  { id: 'motorise', label: 'Motorisé', file: '/models/vheliotech-motorise.glb', note: 'Configuration motorisée' },
+  { id: 'solaire', label: 'Solaire', file: '/models/vheliotech-solaire.glb', note: 'Avec panneau photovoltaïque' },
+] as const
+
+type ModelId = (typeof MODELS)[number]['id']
+
 /** Fiche technique et sources, affichées à côté du modèle uniquement en plein écran. */
-function InfoPanel() {
+function InfoPanel({ variant }: { variant: ModelId }) {
+  const current = MODELS.find((m) => m.id === variant) ?? MODELS[0]
   return (
     <aside className="w-full shrink-0 overflow-y-auto border-t border-rule bg-paper p-5 md:h-full md:w-[370px] md:border-l md:border-t-0 md:p-7 lg:w-[420px]">
       <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-commun">Fiche technique</p>
@@ -12,7 +23,9 @@ function InfoPanel() {
         <Inline text="Le véhicule qui porte le projet est une **rosalie** : un vélo collectif à pédales, de 2 à 9 places selon les modèles, monté sur 3 ou 4 roues — convivialité, effort doux et plaisir de rouler à plusieurs." />
       </p>
       <p className="mt-3 text-[0.95rem] leading-[1.7] text-ink-soft">
-        <Inline text="Le Vhéliotech est un vélo-car utilitaire à trois roues et à assistance électrique, conçu pour être **autoconstruit** : ses plans, son guide de montage et sa nomenclature sont téléchargeables gratuitement sous licence libre (CERN-OHL-S v2). Sa géométrie vient directement des fichiers de conception officiels, convertis ici pour le web." />
+        <Inline
+          text={`Le Vhéliotech est un vélo-car utilitaire à trois roues et à assistance électrique, conçu pour être **autoconstruit** : ses plans, son guide de montage et sa nomenclature sont téléchargeables gratuitement sous licence libre (CERN-OHL-S v2). Sa géométrie vient directement des fichiers de conception officiels, convertis ici pour le web. Configuration affichée : **${current.label.toLowerCase()}** — ${current.note.toLowerCase()}.`}
+        />
       </p>
 
       <dl className="mt-5 divide-y divide-rule overflow-hidden rounded-xl border border-rule text-[0.9rem]">
@@ -61,14 +74,25 @@ function InfoPanel() {
 
 /**
  * Interactive 3D viewer of the Vhéliotech rosalie, converted from the official
- * free STEP plans (licence CERN-OHL-S v2) to a GLB served from /models/.
+ * free STEP plans (licence CERN-OHL-S v2) to GLBs served from /models/.
  * three.js and its addons are loaded on demand so the main bundle stays light.
+ * The four configurations are loaded on first use and kept in memory afterwards.
  */
 export function Rosalie3D() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [variant, setVariant] = useState<ModelId>('basique')
+  const [switching, setSwitching] = useState(false)
   const [fs, setFs] = useState(false)
+  const [unavailable, setUnavailable] = useState<Set<ModelId>>(new Set())
+  // Runtime refs shared between the setup effect and the variant switcher.
+  const sceneRef = useRef<import('three').Scene | null>(null)
+  const cameraRef = useRef<import('three').PerspectiveCamera | null>(null)
+  const currentRef = useRef<ModelId | null>(null)
+  const cacheRef = useRef(new Map<ModelId, { group: import('three').Group; radius: number; distance: number }>())
+  const busyRef = useRef(false)
+  const disposedRef = useRef(false)
 
   // Synchronise l'état « plein écran » avec le navigateur (touche Échap incluse).
   useEffect(() => {
@@ -80,15 +104,14 @@ export function Rosalie3D() {
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
-    let disposed = false
-    let cleanup: (() => void) | undefined
+    disposedRef.current = false
 
     async function setup() {
       try {
         const THREE = await import('three')
         const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
         const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js')
-        if (disposed || !host) return
+        if (disposedRef.current || !host) return
 
         const width = () => host.clientWidth || 600
         const height = () => host.clientHeight || 450
@@ -101,7 +124,9 @@ export function Rosalie3D() {
         host.appendChild(renderer.domElement)
 
         const scene = new THREE.Scene()
+        sceneRef.current = scene
         const camera = new THREE.PerspectiveCamera(38, width() / height(), 1, 40000)
+        cameraRef.current = camera
 
         const hemi = new THREE.HemisphereLight(0xffffff, 0x9aa89a, 1.1)
         hemi.position.set(0, 3000, 0)
@@ -113,44 +138,77 @@ export function Rosalie3D() {
         fill.position.set(-1800, 900, -1600)
         scene.add(fill)
 
-        const gltf = await new Promise<{ scene: import('three').Group }>((resolve, reject) => {
-          new GLTFLoader().load('/models/vheliotech-basique.glb', resolve, undefined, reject)
-        })
-        if (disposed) return
-        const model = gltf.scene
-        // Le STEP des plans est orienté Z vertical : on le remet à plat pour three.js (Y vertical).
-        model.rotation.x = -Math.PI / 2
-        model.updateMatrixWorld(true)
-        scene.add(model)
-
-        // Frame the whole vehicle: centre it and pull the camera back to fit.
-        const box = new THREE.Box3().setFromObject(model)
-        const center = box.getCenter(new THREE.Vector3())
-        const size = box.getSize(new THREE.Vector3())
-        model.position.sub(center)
-        model.updateMatrixWorld(true)
-        const radius = Math.max(size.x, size.y, size.z) * 0.5
-        const distance = (radius * 1.35) / Math.tan((camera.fov * Math.PI) / 360)
-        camera.position.set(distance * 0.6, distance * 0.42, distance * 0.75)
-        camera.near = radius / 100
-        camera.far = distance * 10
-        camera.updateProjectionMatrix()
-        camera.lookAt(0, 0, 0)
-
         const controls = new OrbitControls(camera, renderer.domElement)
-        controls.target.set(0, 0, 0)
         controls.enableDamping = true
         controls.dampingFactor = 0.08
         // Rotation libre : on regarde le modèle sous n'importe quel angle, même par-dessous.
         controls.minPolarAngle = 0
         controls.maxPolarAngle = Math.PI
         controls.enablePan = false
-        controls.minDistance = radius * 1.05
-        controls.maxDistance = distance * 2.4
         // Rotation automatique douce, désactivée si l'utilisateur demande moins d'animations.
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         controls.autoRotate = !reduceMotion
         controls.autoRotateSpeed = 0.9
+
+        /** Charge (ou reprend du cache) une configuration et l'affiche. */
+        async function show(id: ModelId) {
+          if (busyRef.current || disposedRef.current) return
+          busyRef.current = true
+          if (currentRef.current) setSwitching(true)
+          const def = MODELS.find((m) => m.id === id) ?? MODELS[0]
+          let entry = cacheRef.current.get(id)
+          if (!entry) {
+            try {
+              const gltf = await new Promise<{ scene: import('three').Group }>((resolve, reject) => {
+                new GLTFLoader().load(def.file, resolve, undefined, reject)
+              })
+              if (disposedRef.current) return
+              const group = gltf.scene
+              // Le STEP des plans est orienté Z vertical : on le remet à plat pour three.js (Y vertical).
+              group.rotation.x = -Math.PI / 2
+              entry = { group, radius: 1, distance: 10 }
+              cacheRef.current.set(id, entry)
+            } catch {
+              // Configuration non disponible (conversion manquante) : on reste sur la vue en cours.
+              busyRef.current = false
+              setSwitching(false)
+              setUnavailable((prev) => new Set(prev).add(id))
+              if (!currentRef.current) setState('error')
+              return
+            }
+          }
+          // Remet le modèle à l'origine pour recalculer le cadrage à chaque affichage.
+          entry.group.position.set(0, 0, 0)
+          entry.group.updateMatrixWorld(true)
+          const prev = scene.getObjectByName('vheliotech')
+          if (prev) scene.remove(prev)
+          entry.group.name = 'vheliotech'
+          scene.add(entry.group)
+
+          const box = new THREE.Box3().setFromObject(entry.group)
+          const center = box.getCenter(new THREE.Vector3())
+          const size = box.getSize(new THREE.Vector3())
+          entry.group.position.sub(center)
+          entry.group.updateMatrixWorld(true)
+          entry.radius = Math.max(size.x, size.y, size.z) * 0.5
+          entry.distance = (entry.radius * 1.35) / Math.tan((camera.fov * Math.PI) / 360)
+          controls.minDistance = entry.radius * 1.05
+          controls.maxDistance = entry.distance * 2.4
+          if (!currentRef.current) {
+            // Premier affichage : cadrage 3/4. Ensuite on garde la vue de l'utilisateur.
+            camera.position.set(entry.distance * 0.6, entry.distance * 0.42, entry.distance * 0.75)
+            camera.near = entry.radius / 100
+            camera.far = entry.distance * 10
+            camera.updateProjectionMatrix()
+            camera.lookAt(0, 0, 0)
+            controls.target.set(0, 0, 0)
+          }
+          currentRef.current = id
+          setVariant(id)
+          setState('ready')
+          setSwitching(false)
+          busyRef.current = false
+        }
 
         let raf = 0
         const tick = () => {
@@ -174,7 +232,11 @@ export function Rosalie3D() {
         renderer.domElement.addEventListener('pointerdown', stopSpin)
         renderer.domElement.addEventListener('wheel', stopSpin, { passive: true })
 
-        setState('ready')
+        // Expose le changement de configuration pour le sélecteur React.
+        ;(host as HTMLDivElement & { __showModel?: (id: ModelId) => void }).__showModel = show
+        await show('basique')
+        if (disposedRef.current) return
+
         cleanup = () => {
           cancelAnimationFrame(raf)
           ro.disconnect()
@@ -192,16 +254,23 @@ export function Rosalie3D() {
           renderer.domElement.remove()
         }
       } catch {
-        if (!disposed) setState('error')
+        if (!disposedRef.current) setState('error')
       }
     }
 
+    let cleanup: (() => void) | undefined
     setup()
     return () => {
-      disposed = true
+      disposedRef.current = true
       cleanup?.()
     }
   }, [])
+
+  function switchVariant(id: ModelId) {
+    if (id === variant || busyRef.current) return
+    const host = hostRef.current as (HTMLDivElement & { __showModel?: (id: ModelId) => void }) | null
+    host?.__showModel?.(id)
+  }
 
   function toggleFullscreen() {
     const wrap = wrapRef.current
@@ -223,41 +292,69 @@ export function Rosalie3D() {
           }`}
           style={{ cursor: state === 'ready' ? 'grab' : 'default' }}
         >
-          {state !== 'ready' && (
+          {state === 'loading' && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-              {state === 'loading' ? (
-                <>
-                  <span className="h-8 w-8 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
-                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Chargement du modèle 3D…</p>
-                </>
-              ) : (
-                <p className="text-sm text-muted">
-                  Le modèle 3D ne peut pas s'afficher sur cet appareil (WebGL indisponible). Les plans restent{' '}
-                  <a
-                    href="https://vhelio.fr/objets/vheliotech"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="prose-link text-ink"
-                  >
-                    téléchargeables sur vhelio.fr
-                  </a>
-                  .
-                </p>
-              )}
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Chargement du modèle 3D…</p>
+            </div>
+          )}
+          {state === 'error' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
+              <p className="text-sm text-muted">
+                Le modèle 3D ne peut pas s'afficher sur cet appareil (WebGL indisponible). Les plans restent{' '}
+                <a
+                  href="https://vhelio.fr/objets/vheliotech"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="prose-link text-ink"
+                >
+                  téléchargeables sur vhelio.fr
+                </a>
+                .
+              </p>
             </div>
           )}
           {state === 'ready' && (
-            <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-paper/85 px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted backdrop-blur">
-              Glisser : pivoter · Molette / pincer : zoom
-            </span>
+            <>
+              <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-paper/85 px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted backdrop-blur">
+                Glisser : pivoter · Molette / pincer : zoom
+              </span>
+              {switching && (
+                <span className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-paper/85 px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted backdrop-blur">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
+                  Chargement…
+                </span>
+              )}
+            </>
           )}
         </div>
-        {fs && <InfoPanel />}
+        {fs && <InfoPanel variant={variant} />}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-rule px-4 py-2.5 md:px-6">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted">
-          Vhéliotech « basique » — plans 3D officiels (GLB)
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-rule px-4 py-2.5 md:px-6">
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Configuration du Vhéliotech">
+          {MODELS.map((m) => {
+            const missing = unavailable.has(m.id)
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => switchVariant(m.id)}
+                disabled={missing}
+                aria-pressed={variant === m.id}
+                title={missing ? 'Modèle indisponible' : m.note}
+                className={`rounded-full border px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.1em] transition-colors ${
+                  variant === m.id
+                    ? 'border-ink bg-ink text-paper'
+                    : missing
+                      ? 'cursor-not-allowed border-ink/10 text-muted/60 line-through'
+                      : 'border-ink/15 text-ink-soft hover:border-ink/30 hover:bg-commun-soft hover:text-ink'
+                }`}
+              >
+                {m.label}
+              </button>
+            )
+          })}
+        </div>
         <button
           type="button"
           onClick={toggleFullscreen}
