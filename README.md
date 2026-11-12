@@ -20,6 +20,7 @@ En ligne : **https://cycleup.a-is.dev/**
 │   ├── login.php           # Connexion admin → jeton 12 h
 │   ├── admin.php           # Données + modération (requiert jeton)
 │   └── lib.php             # Socle commun : stockage JSON verrouillé, anti-abus
+├── public/models/          # Modèle 3D du Vhéliotech (GLB) servi sur /models/
 └── .figma/make/site.json   # Titre, favicon, CSP, preconnect
 ```
 
@@ -63,6 +64,10 @@ Mesures anti-abus : limitation par IP (intervalle minimal + plafond horaire par 
 ### Frontend et repli
 
 Le forum, la galerie et le contact sont branchés sur l'API ; si le serveur est momentanément injoignable, les contributions sont conservées en `localStorage` puis affichées localement jusqu'au retour du service.
+
+### Modèle 3D de la rosalie
+
+La page `/a-propos/` embarque un viewer 3D du **Vhéliotech** (véhicule utilitaire à pédales et assistance électrique, 3 roues). Le modèle provient des **plans 3D officiels** de l'association Vélo Solaire Pour Tous ([vhelio.org](https://vhelio.fr/objets/vheliotech)), publiés sous licence libre **CERN-OHL-S v2** ; le STEP a été converti en GLB (maillage gmsh, décimation, palette du site) et est servi depuis `public/models/`. Le viewer est en `src/components/Rosalie3D.tsx` : three.js, OrbitControls et GLTFLoader sont chargés à la demande (chunks séparés, aucun CDN, compatible avec la CSP stricte).
 
 ## Données personnelles
 

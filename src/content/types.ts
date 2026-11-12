@@ -18,6 +18,7 @@ export type Block =
   | { type: 'figures'; items: { value: string; label: string; source?: string }[] }
   | { type: 'figure'; src: string; alt: string; caption: string; credit: string }
   | { type: 'widget'; name: 'grille-communs' }
+  | { type: 'viewer'; name: 'vheliotech' }
 
 export type SourceRef = { label: string; url?: string; note?: string }
 

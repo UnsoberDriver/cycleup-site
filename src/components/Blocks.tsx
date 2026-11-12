@@ -1,8 +1,12 @@
+import { lazy, Suspense } from 'react'
 import { Link } from 'react-router'
 import type { Block } from '../content/types'
 import { Inline, typo } from '../lib/inline'
 import { CommonsGrid } from './CommonsGrid'
 import { ArrowRight } from './Icons'
+
+/** Viewer 3D chargé à la demande (three.js dans un chunk séparé, compatible CSP). */
+const Rosalie3D = lazy(() => import('./Rosalie3D').then((m) => ({ default: m.Rosalie3D })))
 
 export function AnchorHeading({ id, children, level = 2 }: { id: string; children: React.ReactNode; level?: 2 | 3 }) {
   const Tag = level === 2 ? 'h2' : 'h3'
@@ -234,6 +238,18 @@ export function BlockView({ block }: { block: Block }) {
       )
     case 'widget':
       return <CommonsGrid />
+    case 'viewer':
+      return (
+        <Suspense
+          fallback={
+            <div className="modern-surface my-10 flex aspect-[4/3] w-full items-center justify-center rounded-[1.25rem]">
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-commun border-t-transparent" aria-hidden="true" />
+            </div>
+          }
+        >
+          <Rosalie3D />
+        </Suspense>
+      )
   }
 }
 
