@@ -22,8 +22,10 @@ export function Header() {
   }, [menu])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper-deep/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-[84px] max-w-[1280px] items-center justify-between gap-6 px-5 md:px-8">
+    <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper-deep/95">
+      {/* Le flou porte sur la barre uniquement : un backdrop-filter sur <header> ferait
+          du header le containing block des éléments fixed, et casserait le panneau mobile. */}
+      <div className="mx-auto flex h-[84px] max-w-[1280px] items-center justify-between gap-6 px-5 md:px-8 backdrop-blur-xl">
         <Logo />
 
         <nav aria-label="Navigation principale" className="hidden items-center gap-1 lg:flex">
@@ -81,7 +83,7 @@ export function Header() {
           </Link>
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-rule lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-ink/15 text-ink transition-colors hover:bg-commun-soft lg:hidden"
             aria-expanded={menu}
             aria-controls="menu-mobile"
             aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'}
