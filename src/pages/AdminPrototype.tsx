@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { ArrowLeft, ArrowRight, CheckIcon, CloseIcon } from '../components/Icons'
 import { Logo } from '../components/Logo'
@@ -294,6 +294,12 @@ export function AdminPage() {
   const [content, setContent] = useState('Saisissez ici le contenu qui apparaîtra sur la page.')
   const [status, setStatus] = useState('Brouillon')
   const [notice, setNotice] = useState('')
+  const titleRef = useRef<HTMLInputElement>(null)
+
+  function flash(text: string) {
+    setNotice(text)
+    window.setTimeout(() => setNotice(''), 4000)
+  }
 
   useEffect(() => {
     const tok = window.sessionStorage.getItem(TOKEN_KEY) ?? window.localStorage.getItem(TOKEN_KEY)
@@ -333,8 +339,7 @@ export function AdminPage() {
   }
 
   function save(label: string) {
-    setNotice(`${label} : les contenus des pages sont compilés dans le site ; le forum, le contact et la modération sont, eux, enregistrés en direct sur le serveur.`)
-    window.setTimeout(() => setNotice(''), 4000)
+    flash(`${label} : les contenus des pages sont compilés dans le site ; le forum, le contact et la modération sont, eux, enregistrés en direct sur le serveur.`)
   }
 
   if (!sessionChecked) {
@@ -366,20 +371,24 @@ export function AdminPage() {
           <p className="px-3 font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted">Administration</p>
           <nav className="mt-5 space-y-1" aria-label="Administration">
             {[
-              ['Contenus', true],
-              ['Chronologie', false],
-              ['Glossaire', false],
-              ['Bibliographie', false],
-              ['Acteurs', false],
-              ['Paramètres', false],
-            ].map(([label, active]) => (
+              { label: 'Contenus', active: true },
+              { label: 'Chronologie', active: false },
+              { label: 'Glossaire', active: false },
+              { label: 'Bibliographie', active: false },
+              { label: 'Acteurs', active: false },
+              { label: 'Paramètres', active: false },
+            ].map((item) => (
               <button
-                key={String(label)}
+                key={item.label}
                 type="button"
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm ${active ? 'bg-ink text-paper' : 'text-ink-soft hover:bg-paper-deep'}`}
+                onClick={() => {
+                  if (item.active) return
+                  flash(`« ${item.label} » n'est pas encore géré ici : cette page gère les contenus, le forum, le contact et la galerie.`)
+                }}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm ${item.active ? 'bg-ink text-paper' : 'text-ink-soft hover:bg-paper-deep'}`}
               >
-                {label}
-                {active && <span className="h-1.5 w-1.5 rounded-full bg-commun-soft" />}
+                {item.label}
+                {item.active && <span className="h-1.5 w-1.5 rounded-full bg-commun-soft" />}
               </button>
             ))}
           </nav>
@@ -404,7 +413,14 @@ export function AdminPage() {
               <h1 className="mt-2 font-serif text-[2.8rem] leading-none font-medium tracking-[-0.04em]">Ajouter un élément</h1>
               <p className="mt-3 text-sm text-muted">Créez un bloc et choisissez la page sur laquelle il doit apparaître.</p>
             </div>
-            <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-commun px-5 text-sm font-medium text-paper shadow-sm">
+            <button
+              type="button"
+              onClick={() => {
+                titleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                titleRef.current?.focus({ preventScroll: true })
+              }}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-commun px-5 text-sm font-medium text-paper shadow-sm"
+            >
               <PlusIcon /> Nouvel élément
             </button>
           </div>
@@ -432,7 +448,7 @@ export function AdminPage() {
               </div>
 
               <Field label="Titre ou libellé">
-                <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+                <input ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
               </Field>
 
               <Field label="Contenu" hint={`${content.length} caractères`}>
