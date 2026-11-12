@@ -6,8 +6,17 @@ import { useEffect, useRef, useState } from 'react'
  * three.js and its addons are loaded on demand so the main bundle stays light.
  */
 export function Rosalie3D() {
+  const wrapRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [fs, setFs] = useState(false)
+
+  // Synchronise l'état « plein écran » avec le navigateur (touche Échap incluse).
+  useEffect(() => {
+    const onChange = () => setFs(document.fullscreenElement === wrapRef.current)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
 
   useEffect(() => {
     const host = hostRef.current
@@ -50,6 +59,9 @@ export function Rosalie3D() {
         })
         if (disposed) return
         const model = gltf.scene
+        // Le STEP des plans est orienté Z vertical : on le remet à plat pour three.js (Y vertical).
+        model.rotation.x = -Math.PI / 2
+        model.updateMatrixWorld(true)
         scene.add(model)
 
         // Frame the whole vehicle: centre it and pull the camera back to fit.
@@ -57,31 +69,26 @@ export function Rosalie3D() {
         const center = box.getCenter(new THREE.Vector3())
         const size = box.getSize(new THREE.Vector3())
         model.position.sub(center)
+        model.updateMatrixWorld(true)
         const radius = Math.max(size.x, size.y, size.z) * 0.5
         const distance = (radius * 1.35) / Math.tan((camera.fov * Math.PI) / 360)
-        camera.position.set(distance * 0.62, distance * 0.5, distance * 0.72)
+        camera.position.set(distance * 0.6, distance * 0.42, distance * 0.75)
         camera.near = radius / 100
         camera.far = distance * 10
         camera.updateProjectionMatrix()
         camera.lookAt(0, 0, 0)
 
-        // Ground shadow disc for a soft contact feel.
-        const ground = new THREE.Mesh(
-          new THREE.CircleGeometry(radius * 1.05, 64),
-          new THREE.ShadowMaterial({ opacity: 0 }),
-        )
-        ground.rotation.x = -Math.PI / 2
-        ground.position.y = box.min.y - center.y
-        scene.add(ground)
-
         const controls = new OrbitControls(camera, renderer.domElement)
         controls.target.set(0, 0, 0)
         controls.enableDamping = true
         controls.dampingFactor = 0.08
+        // Rotation libre : on regarde le modèle sous n'importe quel angle, même par-dessous.
+        controls.minPolarAngle = 0
+        controls.maxPolarAngle = Math.PI
+        controls.enablePan = false
         controls.minDistance = radius * 1.05
         controls.maxDistance = distance * 2.4
-        controls.maxPolarAngle = Math.PI * 0.55
-        // Auto-rotation douce, désactivée si l'utilisateur demande moins d'animations.
+        // Rotation automatique douce, désactivée si l'utilisateur demande moins d'animations.
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         controls.autoRotate = !reduceMotion
         controls.autoRotateSpeed = 0.9
@@ -137,11 +144,23 @@ export function Rosalie3D() {
     }
   }, [])
 
+  function toggleFullscreen() {
+    const wrap = wrapRef.current
+    if (!wrap) return
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else wrap.requestFullscreen?.().catch(() => {})
+  }
+
   return (
-    <div className="modern-surface my-10 overflow-hidden rounded-[1.25rem]">
+    <div
+      ref={wrapRef}
+      className={`modern-surface my-10 overflow-hidden ${fs ? 'flex h-full flex-col' : 'rounded-[1.25rem]'}`}
+    >
       <div
         ref={hostRef}
-        className="relative aspect-[4/3] w-full bg-[linear-gradient(180deg,#f6f8f4_0%,#e9efe6_100%)]"
+        className={`relative w-full bg-[linear-gradient(180deg,#f6f8f4_0%,#e9efe6_100%)] ${
+          fs ? 'min-h-0 flex-1' : 'aspect-[4/3]'
+        }`}
         style={{ cursor: state === 'ready' ? 'grab' : 'default' }}
       >
         {state !== 'ready' && (
@@ -167,14 +186,37 @@ export function Rosalie3D() {
             )}
           </div>
         )}
+        {state === 'ready' && (
+          <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-paper/85 px-3 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted backdrop-blur">
+            Glisser : pivoter · Molette / pincer : zoom
+          </span>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-rule px-4 py-2.5 md:px-6">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted">
           Vhéliotech « basique » — plans 3D officiels (GLB)
         </span>
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted">
-          Glisser : pivoter · Molette : zoom
-        </span>
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="inline-flex items-center gap-1.5 rounded-md border border-ink/15 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-soft transition-colors hover:border-ink/30 hover:bg-commun-soft hover:text-ink"
+        >
+          {fs ? (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4" />
+              </svg>
+              Quitter le plein écran
+            </>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+              </svg>
+              Plein écran
+            </>
+          )}
+        </button>
       </div>
     </div>
   )
