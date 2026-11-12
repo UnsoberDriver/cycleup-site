@@ -1,0 +1,4 @@
+node_modules/
+dist/
+api-php/data/
+.DS_Store

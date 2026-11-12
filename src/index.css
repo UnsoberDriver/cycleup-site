@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import 'leaflet/dist/leaflet.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f7f4ed;
+  --color-paper-deep: #f7f9f5;
+  --color-ink: #103b31;
+  --color-ink-soft: #52685d;
+  --color-muted: #52685d;
+  --color-rule: #b5c5b9;
+  --color-promesse: #52685d;
+  --color-promesse-soft: #eef2ed;
+  --color-commun: #103b31;
+  --color-commun-soft: #d8f66b;
+  --color-alerte: #8a5a00;
+  --color-alerte-soft: #f3e4c2;
+}
+
+@layer base {
+  html {
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'kern', 'liga';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-commun-soft);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  dialog::backdrop {
+    background: rgb(27 26 23 / 0.45);
+    backdrop-filter: blur(2px);
+  }
+}
+
+@layer components {
+  /* Prose links inside article text */
+  .prose-link {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    transition: text-decoration-color 150ms;
+  }
+  .prose-link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* Anchored targets flash briefly so a cited fragment is easy to spot */
+  .anchor-target:target {
+    animation: target-flash 2.4s ease-out;
+  }
+
+  .trace-line {
+    stroke-dasharray: 2 6;
+    stroke-linecap: round;
+  }
+
+  .photo-original {
+    /* Photographs must always retain their original colour treatment. */
+    filter: none;
+    mix-blend-mode: normal;
+  }
+
+  .modern-surface {
+    border: 1px solid rgb(16 59 49 / 0.12);
+    border-radius: 0.75rem;
+    background: rgb(247 249 245 / 0.9);
+    box-shadow:
+      0 1px 1px rgb(16 59 49 / 0.03),
+      0 14px 40px -32px rgb(16 59 49 / 0.28);
+  }
+
+  .lift-card {
+    transition:
+      transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 260ms ease,
+      border-color 260ms ease;
+  }
+  .lift-card:hover {
+    transform: translateY(-6px);
+    border-color: rgb(27 26 23 / 0.2);
+    box-shadow: 0 26px 60px -34px rgb(27 26 23 / 0.42);
+  }
+
+  .eyebrow-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .page-grid {
+    background-image:
+      linear-gradient(rgb(16 59 49 / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(16 59 49 / 0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
+  }
+
+  .reveal {
+    animation: reveal-up 700ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .reveal-delay-1 {
+    animation-delay: 90ms;
+  }
+  .reveal-delay-2 {
+    animation-delay: 180ms;
+  }
+  .reveal-delay-3 {
+    animation-delay: 270ms;
+  }
+
+  .reading-progress {
+    transform-origin: left;
+    animation: reading-progress linear;
+    animation-timeline: scroll(root);
+  }
+
+  .leaflet-container {
+    background: var(--color-paper-deep);
+    font-family: var(--font-sans);
+  }
+
+  .leaflet-control-zoom a {
+    color: var(--color-ink);
+  }
+
+  .rosalie-map-marker-wrap {
+    background: transparent;
+    border: 0;
+  }
+
+  .rosalie-map-marker {
+    position: relative;
+    display: flex;
+    width: 50px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--color-paper);
+    border-radius: 10px;
+    background: var(--color-ink);
+    box-shadow: 0 10px 24px rgb(16 59 49 / 0.28);
+    color: var(--color-paper);
+    font-size: 12px;
+    font-weight: 600;
+    transition: background-color 160ms ease, transform 160ms ease;
+  }
+
+  .rosalie-map-marker::after {
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-top: 8px solid var(--color-ink);
+    border-right: 6px solid transparent;
+    border-left: 6px solid transparent;
+    content: '';
+    transform: translateX(-50%);
+  }
+
+  .rosalie-map-marker.is-active {
+    background: var(--color-commun-soft);
+    color: var(--color-ink);
+    transform: scale(1.12);
+  }
+
+  .rosalie-map-marker.is-active::after {
+    border-top-color: var(--color-commun-soft);
+  }
+
+  @supports (animation-timeline: view()) {
+    .scroll-reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 28%;
+    }
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reading-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes target-flash {
+  0% {
+    background-color: var(--color-alerte-soft);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-delay-1,
+  .reveal-delay-2,
+  .reveal-delay-3,
+  .scroll-reveal,
+  .reading-progress {
+    animation: none;
+  }
+  .lift-card {
+    transition: none;
+  }
+  .lift-card:hover {
+    transform: none;
+  }
+  .anchor-target:target {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

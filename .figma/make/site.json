@@ -1,0 +1,19 @@
+{
+  "title": "Cycle'Up",
+  "description": "De la prospective de la FING aux communs de la Fabrique des Mobilités : une histoire critique des acteurs, des données et des méthodes qui transforment la mobilité.",
+  "language": "fr",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  },
+  "icons": {
+    "icon": "/favicon.png"
+  },
+  "customScripts": {
+    "headStart": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" /><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin /><link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap\" />",
+    "headEnd": "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com https://*.tile.openstreetmap.org; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests\" /><meta name=\"referrer\" content=\"strict-origin-when-cross-origin\" />"
+  }
+}
