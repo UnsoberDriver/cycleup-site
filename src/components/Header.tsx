@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { PRIMARY_NAV } from '../content/site'
-import { CloseIcon, MenuIcon, SearchIcon } from './Icons'
+import { ArrowRight, CloseIcon, MenuIcon, SearchIcon } from './Icons'
 import { Logo } from './Logo'
 import { useSearch } from './searchContext'
 
@@ -95,17 +95,20 @@ export function Header() {
       </div>
 
       {menu && (
-        <div id="menu-mobile" className="fixed inset-x-3 top-[96px] bottom-3 overflow-y-auto rounded-xl border border-rule bg-paper/95 px-5 pb-16 pt-6 shadow-2xl backdrop-blur-xl lg:hidden">
+        <div
+          id="menu-mobile"
+          className="fixed inset-x-3 top-[92px] z-50 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-rule bg-paper/95 px-4 pb-3 pt-2 shadow-2xl backdrop-blur-xl lg:hidden"
+        >
           <nav aria-label="Navigation mobile">
             <ul className="divide-y divide-rule">
               {PRIMARY_NAV.map((item) => (
                 <li key={item.path}>
-                  <Link to={item.path} className="group flex items-center justify-between py-6">
+                  <Link to={item.path} className="group flex items-center justify-between gap-4 py-3">
                     <span>
-                      <span className="block font-serif text-2xl font-semibold">{item.label}</span>
-                      <span className="mt-1 block text-sm text-muted">{item.sub}</span>
+                      <span className="block font-serif text-lg font-semibold leading-tight">{item.label}</span>
+                      <span className="mt-0.5 block text-xs text-muted">{item.sub}</span>
                     </span>
-                    <span className="text-xl text-ink-soft transition-transform group-hover:translate-x-1">→</span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-ink-soft transition-transform group-hover:translate-x-1" />
                   </Link>
                 </li>
               ))}

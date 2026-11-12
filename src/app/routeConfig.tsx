@@ -16,6 +16,7 @@ const ContactPage = lazy(() => import('../pages/Contact').then((m) => ({ default
 const ProjectsPage = lazy(() => import('../pages/ProjectsMap').then((m) => ({ default: m.ProjectsPage })))
 const MapPage = lazy(() => import('../pages/ProjectsMap').then((m) => ({ default: m.MapPage })))
 const ForumPage = lazy(() => import('../pages/Forum').then((m) => ({ default: m.ForumPage })))
+const RosalieSituationPage = lazy(() => import('../pages/RosalieSituation').then((m) => ({ default: m.RosalieSituationPage })))
 
 function Fallback() {
   return (
@@ -35,6 +36,7 @@ export const routeConfig: RouteObject[] = [
         { index: true, Component: Home },
         { path: 'partie-1', element: defer(<ProjectsPage />) },
         { path: 'partie-2', element: defer(<MapPage />) },
+        { path: 'mise-en-situation', element: defer(<RosalieSituationPage />) },
         ...CONTENT_PAGES.map((page) => ({
           path: page.path.replace(/^\/|\/$/g, ''),
           element: <ContentPage key={page.path} page={page} />,

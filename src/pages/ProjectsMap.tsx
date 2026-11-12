@@ -53,38 +53,32 @@ export function ProjectsPage() {
       />
 
       <section className="mx-auto mt-10 max-w-[1240px] px-5 md:px-8" aria-label="Liste des projets">
-        <article className="relative mb-4 overflow-hidden rounded-xl bg-ink p-7 text-paper md:p-10" aria-labelledby="mise-en-situation-rosalie">
-          <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-12">
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-commun-soft text-ink">
-                  <ExperimentIcon className="h-7 w-7" />
-                </span>
-                <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-commun-soft">Tarbes · Cycle'Up</span>
-              </div>
-              <h2 id="mise-en-situation-rosalie" className="mt-6 font-serif text-[2rem] font-semibold leading-tight tracking-[-0.035em] md:text-[2.4rem]">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Link
+            to="/mise-en-situation/"
+            className="lift-card group relative flex min-h-[310px] flex-col overflow-hidden rounded-xl bg-ink p-7 text-paper md:p-9"
+          >
+            <div className="flex items-start justify-between gap-5">
+              <span className="font-mono text-xs font-medium tracking-[0.12em] text-commun-soft">05</span>
+              <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-commun-soft text-ink">
+                <ExperimentIcon className="h-7 w-7" />
+              </span>
+            </div>
+            <div className="mt-auto pt-12">
+              <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-commun-soft">Tarbes · Cycle'Up</p>
+              <h2 className="mt-3 font-serif text-[2rem] font-semibold leading-tight tracking-[-0.035em]">
                 Mise en situation de la Rosalie
               </h2>
+              <p className="mt-3 max-w-lg text-[0.95rem] leading-[1.65] text-paper/80">
+                Une rosalie customisée Flash McQueen pour attirer le regard, simplifier la vie de toutes les générations et faire rire la foule.
+              </p>
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-paper">
+                Découvrir le projet
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
             </div>
-            <div className="space-y-4 text-[0.98rem] leading-[1.75] text-paper/80">
-              <p>
-                Le projet Cycle’up met en place une révolution : la rosalie. Cycle'up est présent dans le milieu éco-responsable car son but est de trouver un moyen de simplifier la vie des personnes jeunes tout comme âgées. Ils se concentrent sur un modèle durable, fiable, disponible le + possible et à portée de main. Il cherche aussi un moyen d'attirer la foule , peu importe s'ils sont concernés ou pas, ils seront attirés par le projet, voire même le supporter.
-              </p>
-              <p>
-                La rosalie est un projet sur Tarbes qui révolutionne les transports : une sorte d'objet de cirque confectionné pour répondre aux problèmes de mobilité et de transports. Elle suit un modèle écologique, durable, éco-responsable.
-              </p>
-              <p className="text-paper">
-                Pour le projet de Cycle'up sur la Rosalie, nous proposons une manière de rapatrier une génération entière en choisissant de la customiser avec une carrosserie Flash McQueen ! On compte sur elle pour attirer l'œil de toutes les personnes comprises entre environ 3 et 25 ans. C'est une bonne manière de faire passer ce sérieux du projet en un objet ludique qui fait rire la foule et qui intrigue.
-              </p>
-              <p>
-                Le but sera aussi par la suite d’utiliser son aspect qui attire le regard pour y implémenter des affiches et panneau publicitaire pour promouvoir le projet Cycle’up.
-              </p>
-            </div>
-          </div>
-          <span className="pointer-events-none absolute -bottom-16 -right-16 h-48 w-48 rounded-full border-[36px] border-commun-soft/15" aria-hidden="true" />
-        </article>
-
-        <div className="grid gap-4 md:grid-cols-2">
+            <span className="pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full border-[32px] border-commun-soft/15" aria-hidden="true" />
+          </Link>
           {PROJECTS.map((project, index) => (
             <Link
               key={project.title}
