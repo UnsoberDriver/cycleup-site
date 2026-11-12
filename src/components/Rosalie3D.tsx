@@ -31,8 +31,8 @@ function InfoPanel({ variant }: { variant: ModelId }) {
           ['Poids à vide', '≈ 85 kg'],
           ['Charge utile', '200 kg (passagers inclus)'],
           ['Embarquement', '2 adultes + 2 enfants · conducteur 150–210 cm'],
-          ['Roues', '3 — mécanique de vélo standard'],
-          ['Assistance', '25 km/h max — reste un vélo'],
+          ['Roues', '3 (mécanique de vélo standard)'],
+          ['Assistance', '25 km/h max (reste un vélo)'],
           ['Autonomie', '25 km/batterie · +8 km/h de soleil'],
         ].map(([dt, dd]) => (
           <div key={dt} className="grid grid-cols-[5.6rem_minmax(0,1fr)] gap-2 px-3 py-[0.35rem]">
@@ -43,7 +43,7 @@ function InfoPanel({ variant }: { variant: ModelId }) {
       </dl>
 
       <p className="mt-3 text-[0.78rem] leading-[1.45] text-muted">
-        <Inline text="Sources : [fiche Vhéliotech](https://vhelio.fr/objets/vheliotech) · [guide de montage v1.0.0, mai 2023](https://documentation.vhelio.org/vheliotech/guide-de-montage/v1.0.0) · [Fabrique des Mobilités](https://wiki.lafabriquedesmobilites.fr/wiki/Vheliotech) — association Vélo Solaire Pour Tous." />
+        <Inline text="Sources : [fiche Vhéliotech](https://vhelio.fr/objets/vheliotech) · [guide de montage v1.0.0, mai 2023](https://documentation.vhelio.org/vheliotech/guide-de-montage/v1.0.0) · [Fabrique des Mobilités](https://wiki.lafabriquedesmobilites.fr/wiki/Vheliotech), association Vélo Solaire Pour Tous." />
       </p>
     </aside>
   )
