@@ -280,11 +280,15 @@ export function MapPage() {
           </div>
           <div className="order-1 min-h-[520px] lg:order-2">
             <RosalieMap active={active} onSelect={setActive} />
+            <p className="px-5 py-4 text-xs leading-relaxed text-muted lg:px-6">
+              Pour une demande d'ajout d'emplacement de rosalies, veuillez vous adresser à notre équipe via le{' '}
+              <Link to="/contact/" className="prose-link text-ink-soft">
+                formulaire
+              </Link>
+              .
+            </p>
           </div>
         </div>
-        <p className="mt-4 text-xs leading-relaxed text-muted">
-          Les points localisent les sites de rosalies de Tarbes, Pau, Toulouse et Lourdes. Dates de mise en place prévues.
-        </p>
       </section>
     </div>
   )
