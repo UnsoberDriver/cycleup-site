@@ -7,7 +7,7 @@ import { useMeta } from '../lib/useMeta'
 
 const PROJECTS = [
   {
-    number: '01',
+    number: '02',
     title: 'Self Data Territorial',
     place: 'La Rochelle',
     text: 'Une expérimentation pour rendre aux habitants la maîtrise de leurs données de déplacement.',
@@ -15,7 +15,7 @@ const PROJECTS = [
     Icon: ExperimentIcon,
   },
   {
-    number: '02',
+    number: '03',
     title: 'TraceMob',
     place: 'Commun numérique',
     text: 'Un traceur de mobilité open source, réutilisable pour les expérimentations territoriales.',
@@ -23,7 +23,7 @@ const PROJECTS = [
     Icon: CommonsIcon,
   },
   {
-    number: '03',
+    number: '04',
     title: 'Cycle\'Up',
     place: 'Sobrarbe',
     text: 'Un cas d’application sur les mobilités partagées dans un territoire très peu dense.',
@@ -31,7 +31,7 @@ const PROJECTS = [
     Icon: MethodIcon,
   },
   {
-    number: '04',
+    number: '05',
     title: 'M covoit’ Lignes+',
     place: 'Massif du Vercors',
     text: 'Un service public de covoiturage dont la montée en charge se construit dans la durée.',
@@ -59,7 +59,7 @@ export function ProjectsPage() {
             className="lift-card group relative flex min-h-[310px] flex-col overflow-hidden rounded-xl bg-ink p-7 text-paper md:p-9"
           >
             <div className="flex items-start justify-between gap-5">
-              <span className="font-mono text-xs font-medium tracking-[0.12em] text-commun-soft">05</span>
+              <span className="font-mono text-xs font-medium tracking-[0.12em] text-commun-soft">01</span>
               <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-commun-soft text-ink">
                 <ExperimentIcon className="h-7 w-7" />
               </span>
