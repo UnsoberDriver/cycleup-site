@@ -124,19 +124,29 @@ function rate_limit(string $bucket, int $min_interval, int $hourly_max): void
     save_data('ratelimit.json', $d);
 }
 
-/** Jetons d'administration (12 h, révocables en vidant tokens.json). */
-function issue_token(): string
+/** Jetons de session (12 h, révocables en vidant tokens.json). */
+function issue_token(string $role = 'admin', string $email = '', string $name = ''): string
 {
     $tokens = load_data('tokens.json', []);
     $now = time();
     $tokens = array_values(array_filter($tokens, fn ($t) => (int) ($t['exp'] ?? 0) > $now));
     $token = bin2hex(random_bytes(32));
-    $tokens[] = ['token' => $token, 'exp' => $now + 12 * 3600];
+    $tokens[] = [
+        'token' => $token,
+        'exp' => $now + 12 * 3600,
+        'role' => $role,
+        'email' => $email,
+        'name' => $name,
+    ];
     save_data('tokens.json', $tokens);
     return $token;
 }
 
-function require_token(): void
+/**
+ * Vérifie le jeton et renvoie ses informations (role, email, name).
+ * Un jeton sans rôle (anciennement émis) est considéré comme administrateur.
+ */
+function require_token(): array
 {
     $hdr = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
     if (!preg_match('/Bearer\s+(\S+)/i', $hdr, $m)) {
@@ -148,10 +158,48 @@ function require_token(): void
         if (is_string($t['token'] ?? null)
             && hash_equals($t['token'], $m[1])
             && (int) ($t['exp'] ?? 0) > $now) {
-            return;
+            return [
+                'role' => (string) ($t['role'] ?? 'admin'),
+                'email' => (string) ($t['email'] ?? ''),
+                'name' => (string) ($t['name'] ?? ''),
+            ];
         }
     }
     json_out(['ok' => false, 'error' => 'Session expirée, reconnecte-toi.'], 401);
+}
+
+/** Exige le rôle administrateur (ou éditeur pour les actions de contenu). */
+function require_admin(): array
+{
+    $info = require_token();
+    if (!in_array($info['role'], ['admin', 'editeur'], true)) {
+        json_out(['ok' => false, 'error' => 'Réservé à l’équipe éditoriale.'], 403);
+    }
+    return $info;
+}
+
+/** Liste des comptes utilisateurs (api/data/users.json). */
+function load_users(): array
+{
+    $users = load_data('users.json', []);
+    return array_values(array_filter($users, fn ($u) => is_array($u) && !empty($u['email'])));
+}
+
+function save_users(array $users): bool
+{
+    return save_data('users.json', array_values($users));
+}
+
+/** Retrouve un compte par son e-mail (insensible à la casse). */
+function find_user(string $email): ?array
+{
+    $needle = mb_strtolower(trim($email));
+    foreach (load_users() as $u) {
+        if (mb_strtolower((string) ($u['email'] ?? '')) === $needle) {
+            return $u;
+        }
+    }
+    return null;
 }
 
 /**

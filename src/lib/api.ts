@@ -142,6 +142,20 @@ export const photoApi = {
 
 export const adminApi = {
   login: (password: string) => call<{ token: string; expiresAt: string }>('/api/login.php', { method: 'POST', body: JSON.stringify({ password }) }),
+
+  /** Connexion d'un compte éditorial (e-mail + mot de passe). */
+  loginAccount: (email: string, password: string) =>
+    call<{ token: string; role: string; name: string; expiresAt: string }>('/api/login.php', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+
+  /** Création d'un compte éditorial. */
+  register: (payload: { name: string; email: string; password: string }) =>
+    call<{ role: string; message: string }>('/api/register.php', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   data: (token: string) =>
     call<{ contacts: ContactEntry[]; forum: ForumMessage[]; photos: GalleryPhoto[]; bans: AdminBan[] }>('/api/admin.php', { headers: { Authorization: `Bearer ${token}` } }),
   remove: (token: string, type: 'forum' | 'contact' | 'photo', id: string) =>

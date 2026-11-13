@@ -67,12 +67,16 @@ export function LoginPage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!identifier.trim() || !password.trim()) {
-      setError('Renseignez votre identifiant et votre mot de passe.')
+    if (!password.trim()) {
+      setError('Renseignez votre mot de passe.')
       return
     }
     setSubmitting(true)
-    const res = await adminApi.login(password)
+    // L'identifiant est facultatif : sans identifiant on utilise le mot de passe
+    // administrateur global ; avec un e-mail on ouvre le compte éditorial correspondant.
+    const res = identifier.trim()
+      ? await adminApi.loginAccount(identifier.trim(), password)
+      : await adminApi.login(password)
     setSubmitting(false)
     if (!res.ok || !res.data.token) {
       setError(res.data.error ?? 'Connexion impossible, réessayez dans un instant.')
@@ -85,7 +89,7 @@ export function LoginPage() {
     navigate('/administration/')
   }
 
-  function register(e: FormEvent) {
+  async function register(e: FormEvent) {
     e.preventDefault()
     setRegistrationNotice('')
     if (!fullName.trim() || !registerEmail.trim() || !registerPassword || !registerConfirmation) {
@@ -100,7 +104,21 @@ export function LoginPage() {
       setRegistrationNotice('Les deux mots de passe ne correspondent pas.')
       return
     }
-    setRegistrationNotice('Les demandes d’accès se font via la page Contact : écrivez-nous et nous créons votre compte.')
+    setSubmitting(true)
+    const res = await adminApi.register({ name: fullName.trim(), email: registerEmail.trim(), password: registerPassword })
+    setSubmitting(false)
+    if (!res.ok) {
+      setRegistrationNotice(res.data.error ?? 'Création du compte impossible, réessaie dans un instant.')
+      return
+    }
+    // Connexion immédiate avec le compte créé.
+    const login = await adminApi.loginAccount(registerEmail.trim(), registerPassword)
+    if (login.ok && login.data.token) {
+      window.localStorage.setItem(TOKEN_KEY, login.data.token)
+      navigate('/administration/')
+      return
+    }
+    setRegistrationNotice(res.data.message ?? 'Compte créé. Tu peux te connecter.')
   }
 
   return (
@@ -140,7 +158,7 @@ export function LoginPage() {
             <p className="mt-4 leading-relaxed text-ink-soft">
               {mode === 'login'
                 ? 'Connectez-vous pour accéder à l’interface de gestion des contenus.'
-                : 'Renseignez vos informations pour demander un accès à l’espace éditorial.'}
+                : 'Créez votre compte éditorial : le premier compte devient administrateur, les suivants éditeur.'}
             </p>
 
             <div className="mt-8 grid grid-cols-2 rounded-full bg-paper-deep p-1" role="tablist" aria-label="Accès au compte">
@@ -172,15 +190,15 @@ export function LoginPage() {
 
             {mode === 'login' ? (
               <form onSubmit={submit} className="mt-7 space-y-5" noValidate>
-                <Field label="Identifiant">
+                <Field label="Adresse e-mail" hint="facultatif pour l’admin">
                   <input
-                    type="text"
+                    type="email"
                     value={identifier}
                     onChange={(e) => {
                       setIdentifier(e.target.value)
                       setError('')
                     }}
-                    placeholder="Votre identifiant"
+                    placeholder="vous@exemple.fr"
                     autoComplete="username"
                     className={inputClass}
                   />
@@ -260,9 +278,10 @@ export function LoginPage() {
                 )}
                 <button
                   type="submit"
-                  className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-commun px-7 font-medium text-paper shadow-[0_15px_35px_-20px_rgba(29,90,82,0.75)] transition-all hover:-translate-y-0.5 hover:bg-ink"
+                  disabled={submitting}
+                  className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-commun px-7 font-medium text-paper shadow-[0_15px_35px_-20px_rgba(29,90,82,0.75)] transition-all hover:-translate-y-0.5 hover:bg-ink disabled:cursor-wait disabled:opacity-60"
                 >
-                  Créer mon compte
+                  {submitting ? 'Création…' : 'Créer mon compte'}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </button>
               </form>
