@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { ArrowLeft, ArrowRight, CheckIcon, CloseIcon } from '../components/Icons'
 import { Logo } from '../components/Logo'
 import { CONTENT_PAGES } from '../content/pages'
-import { adminApi, type ContactEntry, type ForumMessage, type GalleryPhoto } from '../lib/api'
+import { adminApi, type AdminBan, type ContactEntry, type ForumMessage, type GalleryPhoto } from '../lib/api'
 import { useMeta } from '../lib/useMeta'
 
 function EyeIcon({ crossed = false }: { crossed?: boolean }) {
@@ -287,6 +287,8 @@ export function AdminPage() {
   const [contacts, setContacts] = useState<ContactEntry[]>([])
   const [forum, setForum] = useState<ForumMessage[]>([])
   const [photos, setPhotos] = useState<GalleryPhoto[]>([])
+  const [bans, setBans] = useState<AdminBan[]>([])
+  const [banForm, setBanForm] = useState({ ip: '', username: '', expires: 24, reason: '' })
   const [pagePath, setPagePath] = useState(CONTENT_PAGES[0]?.path ?? '')
   const currentPage = useMemo(() => CONTENT_PAGES.find((p) => p.path === pagePath), [pagePath])
   const [blockType, setBlockType] = useState('Paragraphe')
@@ -317,6 +319,7 @@ export function AdminPage() {
         setContacts(res.data.contacts ?? [])
         setForum(res.data.forum ?? [])
         setPhotos(res.data.photos ?? [])
+        setBans(res.data.bans ?? [])
       } else {
         setNotice(res.data.error ?? 'Chargement des données impossible.')
       }
@@ -340,6 +343,27 @@ export function AdminPage() {
 
   function save(label: string) {
     flash(`${label} : les contenus des pages sont compilés dans le site ; le forum, le contact et la modération sont, eux, enregistrés en direct sur le serveur.`)
+  }
+
+  async function banIp(ip: string, username: string, expires: number, reason: string) {
+    const res = await adminApi.ban(token, { ip, username, expires, reason })
+    if (res.ok) {
+      setBans(res.data.bans ?? [])
+      setBanForm({ ip: '', username: '', expires: 24, reason: '' })
+      flash(`Adresse ${ip} bannie.`)
+    } else {
+      flash(res.data.error ?? 'Bannissement impossible.')
+    }
+  }
+
+  async function unbanIp(ip: string) {
+    const res = await adminApi.unban(token, ip)
+    if (res.ok) {
+      setBans(res.data.bans ?? [])
+      flash(`Bannissement de ${ip} levé.`)
+    } else {
+      flash(res.data.error ?? 'Levée du bannissement impossible.')
+    }
   }
 
   if (!sessionChecked) {
@@ -595,6 +619,93 @@ export function AdminPage() {
                 </ul>
               ) : (
                 <p className="mt-4 text-sm text-muted">Aucune photo dans la galerie pour le moment.</p>
+              )}
+            </div>
+
+            <div className="modern-surface mt-6 p-6">
+              <h3 className="flex items-center justify-between text-lg font-semibold">
+                Modération — bannissement
+                <span className="rounded-full bg-promesse-soft px-2.5 py-0.5 font-mono text-[10.5px] text-promesse">{bans.length}</span>
+              </h3>
+              <p className="mt-2 text-sm text-muted">
+                Une adresse bannie ne peut plus publier sur le forum, le formulaire de contact ni la galerie. Le bannissement est permanent par défaut, ou limité à la durée choisie.
+              </p>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_10rem_auto]">
+                <Field label="Adresse IP" hint="obligatoire">
+                  <input
+                    value={banForm.ip}
+                    onChange={(e) => setBanForm((f) => ({ ...f, ip: e.target.value }))}
+                    placeholder="203.0.113.10"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Pseudonyme" hint="facultatif">
+                  <input
+                    value={banForm.username}
+                    onChange={(e) => setBanForm((f) => ({ ...f, username: e.target.value }))}
+                    placeholder="Nom affiché"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Durée">
+                  <select
+                    value={banForm.expires}
+                    onChange={(e) => setBanForm((f) => ({ ...f, expires: Number(e.target.value) }))}
+                    className={inputClass}
+                  >
+                    <option value={0}>Permanent</option>
+                    <option value={1}>1 heure</option>
+                    <option value={24}>24 heures</option>
+                    <option value={168}>7 jours</option>
+                    <option value={720}>30 jours</option>
+                  </select>
+                </Field>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    disabled={!banForm.ip.trim()}
+                    onClick={() => banIp(banForm.ip.trim(), banForm.username.trim(), banForm.expires, banForm.reason.trim())}
+                    className="h-12 w-full rounded-xl bg-promesse px-5 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Bannir
+                  </button>
+                </div>
+              </div>
+
+              <Field label="Motif du bannissement" hint="affiché au visiteur">
+                <input
+                  value={banForm.reason}
+                  onChange={(e) => setBanForm((f) => ({ ...f, reason: e.target.value }))}
+                  placeholder="Messages malveillants, harcelement, spam…"
+                  className={inputClass}
+                />
+              </Field>
+
+              {bans.length ? (
+                <ul className="mt-5 space-y-2">
+                  {bans.map((b) => (
+                    <li key={b.ip} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rule bg-paper px-4 py-3">
+                      <div>
+                        <p className="font-mono text-sm text-ink">{b.ip}</p>
+                        <p className="mt-0.5 text-xs text-muted">
+                          {b.username ? `${b.username} · ` : ''}
+                          {b.expires ? `expire dans ${b.expires} h` : 'permanent'}
+                          {b.reason ? ` · ${b.reason}` : ''}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => unbanIp(b.ip)}
+                        className="rounded-md border border-ink/10 px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-commun/40 hover:bg-commun-soft hover:text-ink"
+                      >
+                        Débannir
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm text-muted">Aucune adresse bannie pour le moment.</p>
               )}
             </div>
           </section>

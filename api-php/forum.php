@@ -33,6 +33,7 @@ if ($method !== 'POST') {
     json_out(['ok' => false, 'error' => 'Méthode non autorisée.'], 405);
 }
 
+reject_if_banned();
 rate_limit('forum', 20, 10);
 
 $b = body_json();

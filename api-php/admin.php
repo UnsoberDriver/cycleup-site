@@ -1,7 +1,8 @@
 <?php
 /**
  * Console d'administration — GET données, POST actions.
- * Actions : delete {type: forum|contact, id}, setpassword {password}.
+ * Actions : delete {type: forum|contact|photo, id}, setpassword {password},
+ *           ban {ip, username, expires, reason}, unban {ip}.
  */
 declare(strict_types=1);
 require __DIR__ . '/lib.php';
@@ -16,6 +17,7 @@ if ($method === 'GET') {
         'contacts' => array_values(load_data('contact.json', [])),
         'forum' => array_values(load_data('forum.json', [])),
         'photos' => array_values(load_data('photos.json', [])),
+        'bans' => load_bans(),
     ]);
 }
 
@@ -55,6 +57,27 @@ if ($action === 'setpassword') {
     }
     save_data('tokens.json', []); // déconnexion de toutes les sessions
     json_out(['ok' => true]);
+}
+
+if ($action === 'ban') {
+    $ip = clean_text($b['ip'] ?? '', 45);
+    if ($ip === '') {
+        json_out(['ok' => false, 'error' => 'Adresse IP manquante.'], 422);
+    }
+    $username = clean_text($b['username'] ?? '', 50);
+    $expires = (int) ($b['expires'] ?? 0);
+    $reason = clean_text($b['reason'] ?? '', 200);
+    $bans = ban_ip($ip, $username, $expires, $reason);
+    json_out(['ok' => true, 'bans' => $bans]);
+}
+
+if ($action === 'unban') {
+    $ip = clean_text($b['ip'] ?? '', 45);
+    if ($ip === '') {
+        json_out(['ok' => false, 'error' => 'Adresse IP manquante.'], 422);
+    }
+    $bans = unban_ip($ip);
+    json_out(['ok' => true, 'bans' => $bans]);
 }
 
 json_out(['ok' => false, 'error' => 'Action inconnue.'], 422);

@@ -18,6 +18,7 @@ if ($method !== 'POST') {
     json_out(['ok' => false, 'error' => 'Méthode non autorisée.'], 405);
 }
 
+reject_if_banned();
 rate_limit('photos', 45, 12);
 
 $b = body_json();

@@ -15,6 +15,7 @@ if (clean_text($b['website'] ?? '', 100) !== '') {
     json_out(['ok' => true]);
 }
 
+reject_if_banned();
 rate_limit('contact', 30, 5);
 
 $name = clean_text($b['name'] ?? '', 80);

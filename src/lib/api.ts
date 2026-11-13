@@ -34,6 +34,14 @@ export type ApiResult<T = unknown> = {
   data: T & { ok?: boolean; error?: string }
 }
 
+export type AdminBan = {
+  ip: string
+  username?: string
+  expires?: number
+  reason?: string
+  created?: string
+}
+
 async function call<T = Record<string, unknown>>(url: string, init?: RequestInit): Promise<ApiResult<T>> {
   try {
     const res = await fetch(url, {
@@ -74,13 +82,30 @@ export const photoApi = {
 export const adminApi = {
   login: (password: string) => call<{ token: string; expiresAt: string }>('/api/login.php', { method: 'POST', body: JSON.stringify({ password }) }),
   data: (token: string) =>
-    call<{ contacts: ContactEntry[]; forum: ForumMessage[]; photos: GalleryPhoto[] }>('/api/admin.php', { headers: { Authorization: `Bearer ${token}` } }),
+    call<{ contacts: ContactEntry[]; forum: ForumMessage[]; photos: GalleryPhoto[]; bans: AdminBan[] }>('/api/admin.php', { headers: { Authorization: `Bearer ${token}` } }),
   remove: (token: string, type: 'forum' | 'contact' | 'photo', id: string) =>
     call('/api/admin.php', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action: 'delete', type, id }),
     }),
+  /** Bannissement d'une IP (modération renforcée). */
+  ban: (token: string, payload: { ip: string; username?: string; expires?: number; reason?: string }) =>
+    call('/api/admin.php', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'ban', ...payload }),
+    }),
+  /** Levée d'un bannissement. */
+  unban: (token: string, ip: string) =>
+    call('/api/admin.php', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'unban', ip }),
+    }),
+  /** Liste des bannissements en cours. */
+  bans: (token: string) =>
+    call<{ bans: AdminBan[] }>('/api/admin.php', { headers: { Authorization: `Bearer ${token}` } }),
 }
 
 /** Connexion + suppression d'un contenu (modération par mot de passe admin). */

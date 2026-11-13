@@ -154,6 +154,79 @@ function require_token(): void
     json_out(['ok' => false, 'error' => 'Session expirée, reconnecte-toi.'], 401);
 }
 
+/**
+ * Liste des IP bannies (api/data/bans.json).
+ * Chaque ban : { ip, username, expires (heures, 0 = permanent), reason, created }.
+ */
+function load_bans(): array
+{
+    $bans = load_data('bans.json', []);
+    $now = time();
+    $valid = [];
+    foreach ($bans as $b) {
+        if (!is_array($b) || empty($b['ip'])) {
+            continue;
+        }
+        $exp = (int) ($b['expires'] ?? 0);
+        if ($exp === 0 || $now < strtotime('+' . $exp . ' hours')) {
+            $valid[] = $b;
+        }
+    }
+    return $valid;
+}
+
+/** Sauvegarde la liste des bans (purge les expirés au passage). */
+function save_bans(array $bans): bool
+{
+    return save_data('bans.json', array_values($bans));
+}
+
+/** Bannit une IP. Retourne la liste complète des bans actifs. */
+function ban_ip(string $ip, string $username = '', int $expires = 0, string $reason = ''): array
+{
+    $bans = load_bans();
+    $bans = array_values(array_filter($bans, fn ($b) => ($b['ip'] ?? '') !== $ip));
+    $bans[] = [
+        'ip' => $ip,
+        'username' => $username,
+        'expires' => max(0, $expires),
+        'reason' => $reason,
+        'created' => date('c'),
+    ];
+    usort($bans, fn ($a, $b) => strcmp((string) ($b['created'] ?? ''), (string) ($a['created'] ?? '')));
+    save_bans($bans);
+    return $bans;
+}
+
+/** Lève un bannissement. */
+function unban_ip(string $ip): array
+{
+    $bans = array_values(array_filter(load_bans(), fn ($b) => ($b['ip'] ?? '') !== $ip));
+    save_bans($bans);
+    return $bans;
+}
+
+/**
+ * Bloque la publication si l'IP du visiteur est bannie.
+ * À appeler dans chaque endpoint public acceptant des écritures.
+ */
+function reject_if_banned(): void
+{
+    $ip = client_ip();
+    foreach (load_bans() as $b) {
+        if (($b['ip'] ?? '') === $ip) {
+            $reason = trim((string) ($b['reason'] ?? ''));
+            json_out([
+                'ok' => false,
+                'error' => $reason !== ''
+                    ? 'Publication refusée : ' . $reason
+                    : 'Publication refusée : votre adresse est bannie de ce site.',
+                'banned' => true,
+            ], 403);
+        }
+    }
+}
+
 /** Hachage du mot de passe admin (doit exister dans api/data/admin.json). */
 function admin_password_hash(): string
 {
