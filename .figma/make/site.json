@@ -10,10 +10,10 @@
     "ignoreReducedMotion": false
   },
   "icons": {
-    "icon": "/favicon.png"
+    "icon": "/favicon-cycleup.png"
   },
   "customScripts": {
-    "headStart": "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" /><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin /><link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap\" />",
+    "headStart": "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-cycleup.png\" /><link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/icon-cycleup-16.png\" /><link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon-cycleup.png\" /><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" /><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin /><link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap\" />",
     "headEnd": "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com https://*.tile.openstreetmap.org; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests\" /><meta name=\"referrer\" content=\"strict-origin-when-cross-origin\" />"
   }
 }
