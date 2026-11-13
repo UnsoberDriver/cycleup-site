@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { CheckIcon, CloseIcon } from './Icons'
-import { moderateDelete, photoApi } from '../lib/api'
+import { deleteOwnGalleryPhoto, isAdminSession, moderateDelete, photoApi } from '../lib/api'
 
 type Photo = {
   id: string
@@ -12,6 +12,29 @@ type Photo = {
 }
 
 const STORAGE_KEY = 'mobilites-forum-photos'
+/** IDs des photos publiées depuis ce navigateur : l'auteur peut les supprimer. */
+const OWN_KEY = 'mobilites-gallery-own'
+
+function readOwnIds(): string[] {
+  try {
+    const raw = window.localStorage.getItem(OWN_KEY)
+    const list = raw ? (JSON.parse(raw) as string[]) : []
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+function rememberOwnId(id: string) {
+  try {
+    const list = readOwnIds()
+    if (!list.includes(id)) {
+      window.localStorage.setItem(OWN_KEY, JSON.stringify([...list, id].slice(-200)))
+    }
+  } catch {
+    // Stockage indisponible.
+  }
+}
 const PLACES = ['Tarbes', 'Pau', 'Toulouse', 'Lourdes', 'Autre lieu']
 const MAX_SIDE = 1200
 const MAX_FILE_MB = 10
@@ -51,11 +74,17 @@ export function RosalieGallery() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ tone: 'error' | 'success'; text: string } | null>(null)
   const [opened, setOpened] = useState<Photo | null>(null)
+  /** Photos publiées depuis ce navigateur (suppression sans mot de passe). */
+  const [ownIds, setOwnIds] = useState<string[]>([])
+  /** Session d'administration active : permet de modérer toutes les photos. */
+  const [isAdmin, setIsAdmin] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Chargement des photos du serveur ; repli sur le navigateur si l'API est injoignable.
   useEffect(() => {
     let alive = true
+    setOwnIds(readOwnIds())
+    setIsAdmin(isAdminSession())
     photoApi.list().then((remote) => {
       if (!alive) return
       if (remote) {
@@ -118,6 +147,8 @@ export function RosalieGallery() {
     setBusy(false)
     if (res.ok && res.data.photo) {
       setPhotos((prev) => [res.data.photo!, ...prev])
+      rememberOwnId(res.data.photo.id)
+      setOwnIds((prev) => (prev.includes(res.data.photo!.id) ? prev : [...prev, res.data.photo!.id]))
       setPreview(null)
       setCaption('')
       if (fileRef.current) fileRef.current.value = ''
@@ -152,11 +183,16 @@ export function RosalieGallery() {
 
   async function remove(photo: Photo) {
     if (!window.confirm('Supprimer cette photo ? Cette action est définitive.')) return
-    const password = window.prompt('Modération : saisissez le mot de passe d’administration.')
-    if (!password) return
-    const res = await moderateDelete('photo', photo.id, password)
+    const isOwner = ownIds.includes(photo.id)
+    // L'auteur supprime sans mot de passe ; l'administration demande le mot de passe.
+    const password = isOwner ? '' : window.prompt('Modération : saisissez le mot de passe d’administration.')
+    if (!isOwner && !password) return
+    const res = isOwner
+      ? await deleteOwnGalleryPhoto(photo.id)
+      : await moderateDelete('photo', photo.id, password)
     if (res.ok) {
       setPhotos((prev) => prev.filter((p) => p.id !== photo.id))
+      setOwnIds((prev) => prev.filter((id) => id !== photo.id))
       setOpened(null)
       setNotice({ tone: 'success', text: 'La photo a été supprimée du serveur.' })
     } else {
@@ -314,13 +350,15 @@ export function RosalieGallery() {
                   Par {opened.author} · {new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(opened.createdAt))}
                 </span>
               </span>
-              <button
-                type="button"
-                onClick={() => remove(opened)}
-                className="rounded-md border border-ink/10 px-3 py-1.5 text-xs font-medium text-muted hover:bg-promesse-soft hover:text-ink"
-              >
-                Supprimer
-              </button>
+              {(isAdmin || ownIds.includes(opened.id)) && (
+                <button
+                  type="button"
+                  onClick={() => remove(opened)}
+                  className="rounded-md border border-ink/10 px-3 py-1.5 text-xs font-medium text-muted hover:bg-promesse-soft hover:text-ink"
+                >
+                  Supprimer
+                </button>
+              )}
             </figcaption>
           </figure>
         </div>

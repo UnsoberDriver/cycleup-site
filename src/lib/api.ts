@@ -62,7 +62,65 @@ export const forumApi = {
     return r.ok && Array.isArray(r.data.messages) ? r.data.messages : null
   },
   create: (message: Omit<ForumMessage, 'id' | 'createdAt'>) =>
-    call<{ message: ForumMessage }>('/api/forum.php', { method: 'POST', body: JSON.stringify(message) }),
+    call<{ message: ForumMessage }>('/api/forum.php', {
+      method: 'POST',
+      body: JSON.stringify({ ...message, secret: getAuthorSecret() }),
+    }),
+}
+
+/**
+ * Secret personnel d'auteur : permet de supprimer ses propres messages/photos
+ * sans donner le mot de passe d'administration. Conservé uniquement dans le
+ * navigateur de l'auteur (localStorage), jamais transmis en clair au serveur
+ * (le serveur n'en stocke que l'empreinte SHA-256).
+ */
+const AUTHOR_SECRET_KEY = 'mobilites-author-secret'
+
+export function getAuthorSecret(): string {
+  let secret = ''
+  try {
+    secret = window.localStorage.getItem(AUTHOR_SECRET_KEY) ?? ''
+  } catch {
+    secret = ''
+  }
+  if (!secret) {
+    secret = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    try {
+      window.localStorage.setItem(AUTHOR_SECRET_KEY, secret)
+    } catch {
+      // Stockage indisponible : le secret restera en mémoire pour la session.
+    }
+  }
+  return secret
+}
+
+/** Suppression d'un message du forum par son auteur (sans mot de passe admin). */
+export async function deleteOwnForumMessage(id: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await call('/api/forum.php', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'delete', id, secret: getAuthorSecret() }),
+  })
+  return { ok: res.ok, error: res.data.error }
+}
+
+/** Suppression d'une photo de la galerie par son auteur (sans mot de passe admin). */
+export async function deleteOwnGalleryPhoto(id: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await call('/api/photos.php', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'delete', id, secret: getAuthorSecret() }),
+  })
+  return { ok: res.ok, error: res.data.error }
+}
+
+/** Un visiteur est-il connecté comme administrateur ? */
+export function isAdminSession(): boolean {
+  try {
+    return Boolean(
+      window.sessionStorage.getItem('mobilites-admin-token') ?? window.localStorage.getItem('mobilites-admin-token'),
+    )
+  } catch {
+    return false
+  }
 }
 
 export const contactApi = {
@@ -76,7 +134,10 @@ export const photoApi = {
     return r.ok && Array.isArray(r.data.photos) ? r.data.photos : null
   },
   create: (payload: { src: string; place: string; caption: string; author: string }) =>
-    call<{ photo: GalleryPhoto }>('/api/photos.php', { method: 'POST', body: JSON.stringify(payload) }),
+    call<{ photo: GalleryPhoto }>('/api/photos.php', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, secret: getAuthorSecret() }),
+    }),
 }
 
 export const adminApi = {

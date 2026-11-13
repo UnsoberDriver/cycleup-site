@@ -155,6 +155,94 @@ function require_token(): void
 }
 
 /**
+ * Liste des mots insultants / malveillants bloqués à la publication.
+ * Liste courte et explicite : on bloque l'injure franche, pas le vocabulaire courant.
+ */
+const MODERATION_WORDS = [
+    'connard', 'connasse', 'salope', 'pute', 'putain', 'enculé', 'encule', 'encule',
+    'batard', 'bâtard', 'fils de chienne', 'salopard', 'débile', 'debile', 'imbécile',
+    'imbecile', 'crétin', 'cretin', 'abruti', 'abruti', 'tapette', 'pedale', 'chier',
+];
+
+/**
+ * Renvoie le premier mot insultant trouvé dans les champs donnés.
+ */
+function find_abuse(array $fields): ?string
+{
+    foreach ($fields as $field) {
+        $s = mb_strtolower((string) $field);
+        // On neutralise les séparateurs (c-o-n-n-a-r-d) pour contrer les contournements.
+        $compact = preg_replace('/[^a-zà-ÿ]+/u', '', $s);
+        foreach (MODERATION_WORDS as $word) {
+            $needle = preg_replace('/[^a-zà-ÿ]+/u', '', mb_strtolower($word));
+            if ($needle === '' || $needle === null) {
+                continue;
+            }
+            if (mb_strpos($s, mb_strtolower($word)) !== false || ($compact !== '' && mb_strpos($compact, $needle) !== false)) {
+                return $word;
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Refuse la publication si le contenu est insultant.
+ * Enregistre un avertissement ; au-delà du seuil, l'adresse est bannie automatiquement.
+ */
+function reject_if_abusive(array $fields, string $bucket = 'forum'): void
+{
+    $word = find_abuse($fields);
+    if ($word === null) {
+        return;
+    }
+    $strikes = register_strike($bucket);
+    if ($strikes >= 3) {
+        ban_ip(client_ip(), '', 24, 'Envois répétés de messages insultants (3 avertissements).');
+        json_out([
+            'ok' => false,
+            'error' => 'Publication refusée : langage insultant. Troisième avertissement, votre adresse est bloquée 24 h.',
+            'banned' => true,
+        ], 403);
+    }
+    json_out([
+        'ok' => false,
+        'error' => 'Publication refusée : le message contient une insulte (« ' . $word . ' »). Rédigons autrement.',
+        'banned' => false,
+    ], 422);
+}
+
+/**
+ * Compteur d'avertissements par IP et par type de publication.
+ */
+function register_strike(string $bucket): int
+{
+    $d = load_data('strikes.json', []);
+    $now = time();
+    foreach ($d as $k => $v) {
+        if ($now - (int) ($v['last'] ?? 0) > 604800) {
+            unset($d[$k]);
+        }
+    }
+    $key = $bucket . '|' . client_ip();
+    $e = $d[$key] ?? ['count' => 0, 'last' => 0];
+    $e['count'] = (int) ($e['count'] ?? 0) + 1;
+    $e['last'] = $now;
+    $d[$key] = $e;
+    save_data('strikes.json', $d);
+    return (int) $e['count'];
+}
+
+/**
+ * Hachage du secret d'auteur : permet à l'auteur de supprimer son propre message
+ * sans transmettre le mot de passe d'administration.
+ */
+function owner_hash(string $secret): string
+{
+    return hash('sha256', $secret);
+}
+
+/**
  * Liste des IP bannies (api/data/bans.json).
  * Chaque ban : { ip, username, expires (heures, 0 = permanent), reason, created }.
  */

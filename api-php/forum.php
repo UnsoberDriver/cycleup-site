@@ -25,7 +25,12 @@ if ($messages === []) {
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
-    json_out(['ok' => true, 'messages' => array_values($messages)]);
+    // L'empreinte interne du secret d'auteur n'est jamais exposée publiquement.
+    $public = array_map(static function (array $m): array {
+        unset($m['owner']);
+        return $m;
+    }, array_values($messages));
+    json_out(['ok' => true, 'messages' => $public]);
 }
 
 if ($method !== 'POST') {
@@ -37,10 +42,41 @@ reject_if_banned();
 rate_limit('forum', 20, 10);
 
 $b = body_json();
+
+/* ---- Suppression par l'auteur de son propre message (sans mot de passe admin) ---- */
+if (($b['action'] ?? '') === 'delete') {
+    $id = clean_text($b['id'] ?? '', 40);
+    $secret = clean_text($b['secret'] ?? '', 64);
+    if ($id === '' || $secret === '') {
+        json_out(['ok' => false, 'error' => 'Paramètres invalides.'], 422);
+    }
+    $all = load_data('forum.json', []);
+    $kept = array_values(array_filter($all, fn ($e) => ($e['id'] ?? '') !== $id));
+    if (count($kept) === count($all)) {
+        json_out(['ok' => false, 'error' => 'Message introuvable.'], 404);
+    }
+    $target = null;
+    foreach ($all as $e) {
+        if (($e['id'] ?? '') === $id) {
+            $target = $e;
+            break;
+        }
+    }
+    $expected = (string) ($target['owner'] ?? '');
+    if ($expected === '' || !hash_equals($expected, owner_hash($secret))) {
+        json_out(['ok' => false, 'error' => 'Seul l’auteur du message peut le supprimer.'], 403);
+    }
+    if (!save_data('forum.json', $kept)) {
+        json_out(['ok' => false, 'error' => 'Sauvegarde impossible.'], 500);
+    }
+    json_out(['ok' => true]);
+}
+
 $topic = clean_text($b['topic'] ?? '', 20);
 $author = clean_text($b['author'] ?? '', 60);
 $title = clean_text($b['title'] ?? '', 120);
 $content = clean_text($b['content'] ?? '', 5000);
+$secret = clean_text($b['secret'] ?? '', 64);
 
 if (!in_array($topic, TOPICS, true)) {
     json_out(['ok' => false, 'error' => 'Thème inconnu.'], 422);
@@ -55,6 +91,9 @@ if ($content === '' || mb_strlen($content) < 5) {
     json_out(['ok' => false, 'error' => 'Le message doit contenir au moins 5 caractères.'], 422);
 }
 
+// Modération du langage : insultes et messages malveillants refusés à la publication.
+reject_if_abusive([$title, $content, $author], 'forum');
+
 $msg = [
     'id' => bin2hex(random_bytes(8)),
     'topic' => $topic,
@@ -63,6 +102,11 @@ $msg = [
     'content' => $content,
     'createdAt' => date('c'),
 ];
+// Empreinte du secret d'auteur : permet à l'auteur de supprimer son message
+// sans donner le mot de passe d'administration. Le secret n'est jamais renvoyé par l'API.
+if ($secret !== '') {
+    $msg['owner'] = owner_hash($secret);
+}
 
 $messages[] = $msg;
 if (count($messages) > MAX_MESSAGES) {

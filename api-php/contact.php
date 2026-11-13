@@ -34,6 +34,9 @@ if (mb_strlen($message) < 10) {
     json_out(['ok' => false, 'error' => 'Le message doit contenir au moins 10 caractères.'], 422);
 }
 
+// Modération du langage : insultes et messages malveillants refusés.
+reject_if_abusive([$subject, $message, $name], 'contact');
+
 $entry = [
     'id' => bin2hex(random_bytes(8)),
     'name' => $name,

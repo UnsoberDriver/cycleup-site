@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { CheckIcon } from '../components/Icons'
 import { PageHeader } from '../components/PageHeader'
 import { RosalieGallery } from '../components/RosalieGallery'
-import { forumApi, moderateDelete } from '../lib/api'
+import { deleteOwnForumMessage, forumApi, isAdminSession, moderateDelete } from '../lib/api'
 import { useMeta } from '../lib/useMeta'
 
 type Topic = {
@@ -49,6 +49,29 @@ const INITIAL_MESSAGES: ForumMessage[] = [
 ]
 
 const STORAGE_KEY = 'mobilites-forum-messages'
+/** IDs des messages publiés depuis ce navigateur : l'auteur peut les supprimer. */
+const OWN_KEY = 'mobilites-forum-own'
+
+function readOwnIds(): string[] {
+  try {
+    const raw = window.localStorage.getItem(OWN_KEY)
+    const list = raw ? (JSON.parse(raw) as string[]) : []
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+function rememberOwnId(id: string) {
+  try {
+    const list = readOwnIds()
+    if (!list.includes(id)) {
+      window.localStorage.setItem(OWN_KEY, JSON.stringify([...list, id].slice(-200)))
+    }
+  } catch {
+    // Stockage indisponible : la suppression par l'auteur ne sera pas proposée.
+  }
+}
 
 const FAQ = [
   {
@@ -95,6 +118,10 @@ export function ForumPage() {
   useMeta('Forum', 'Forum ouvert consacré aux projets, aux rosalies et aux mobilités.')
   const [activeTopic, setActiveTopic] = useState('general')
   const [messages, setMessages] = useState<ForumMessage[]>(INITIAL_MESSAGES)
+  /** Messages publiés depuis ce navigateur (suppression sans mot de passe). */
+  const [ownIds, setOwnIds] = useState<string[]>([])
+  /** Session d'administration active : permet de modérer tous les messages. */
+  const [isAdmin, setIsAdmin] = useState(false)
   const [author, setAuthor] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -103,6 +130,8 @@ export function ForumPage() {
   // Chargement des messages du serveur ; repli sur le navigateur si l'API est injoignable.
   useEffect(() => {
     let alive = true
+    setOwnIds(readOwnIds())
+    setIsAdmin(isAdminSession())
     forumApi.list().then((remote) => {
       if (!alive) return
       if (remote) {
@@ -153,6 +182,8 @@ export function ForumPage() {
     const created = res.ok ? res.data.message : undefined
     if (created) {
       setMessages((prev) => [...prev, created])
+      rememberOwnId(created.id)
+      setOwnIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]))
       setTitle('')
       setContent('')
       setNotice({ tone: 'success', text: 'Votre message a été publié.' })
@@ -181,11 +212,16 @@ export function ForumPage() {
   async function deleteMessage(message: ForumMessage) {
     const confirmed = window.confirm(`Supprimer le message « ${message.title} » ? Cette action est définitive.`)
     if (!confirmed) return
-    const password = window.prompt('Modération : saisissez le mot de passe d’administration.')
-    if (!password) return
-    const res = await moderateDelete('forum', message.id, password)
+    const isOwner = ownIds.includes(message.id)
+    // L'auteur supprime sans mot de passe ; l'administration demande le mot de passe.
+    const password = isOwner ? '' : window.prompt('Modération : saisissez le mot de passe d’administration.')
+    if (!isOwner && !password) return
+    const res = isOwner
+      ? await deleteOwnForumMessage(message.id)
+      : await moderateDelete('forum', message.id, password)
     if (res.ok) {
       setMessages((prev) => prev.filter((item) => item.id !== message.id))
+      setOwnIds((prev) => prev.filter((id) => id !== message.id))
       setNotice({ tone: 'success', text: 'Le message a été supprimé du serveur.' })
     } else {
       setNotice({ tone: 'error', text: res.error ?? 'Suppression impossible.' })
@@ -269,14 +305,16 @@ export function ForumPage() {
                         </time>
                       </span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => deleteMessage(message)}
-                      className="rounded-md border border-ink/10 px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-promesse/40 hover:bg-promesse-soft hover:text-ink"
-                      aria-label={`Supprimer le message ${message.title}`}
-                    >
-                      Supprimer
-                    </button>
+                    {(isAdmin || ownIds.includes(message.id)) && (
+                      <button
+                        type="button"
+                        onClick={() => deleteMessage(message)}
+                        className="rounded-md border border-ink/10 px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-promesse/40 hover:bg-promesse-soft hover:text-ink"
+                        aria-label={`Supprimer le message ${message.title}`}
+                      >
+                        Supprimer
+                      </button>
+                    )}
                   </div>
                   <h3 className="mt-5 text-lg font-semibold">{message.title}</h3>
                   <p className="mt-2 whitespace-pre-line text-[0.95rem] leading-[1.7] text-ink-soft">{message.content}</p>
