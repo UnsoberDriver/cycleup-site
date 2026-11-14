@@ -80,4 +80,27 @@ if ($action === 'unban') {
     json_out(['ok' => true, 'bans' => $bans]);
 }
 
+if ($action === 'ban_message') {
+    $id = clean_text($b['id'] ?? '', 40);
+    $reason = clean_text($b['reason'] ?? '', 200);
+    if ($id === '') {
+        json_out(['ok' => false, 'error' => 'Message introuvable.'], 422);
+    }
+    if (!ban_message($id, $reason)) {
+        json_out(['ok' => false, 'error' => 'Message introuvable.'], 404);
+    }
+    json_out(['ok' => true]);
+}
+
+if ($action === 'unban_message') {
+    $id = clean_text($b['id'] ?? '', 40);
+    if ($id === '') {
+        json_out(['ok' => false, 'error' => 'Message introuvable.'], 422);
+    }
+    if (!unban_message($id)) {
+        json_out(['ok' => false, 'error' => 'Message introuvable.'], 404);
+    }
+    json_out(['ok' => true]);
+}
+
 json_out(['ok' => false, 'error' => 'Action inconnue.'], 422);

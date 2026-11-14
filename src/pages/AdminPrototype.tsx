@@ -385,6 +385,33 @@ export function AdminPage() {
     }
   }
 
+  /** Signale (ou lève le signalement) un message du forum : il s'affiche alors en rouge. */
+  async function toggleBanMessage(message: ForumMessage) {
+    const res = message.banned
+      ? await adminApi.unbanMessage(token, message.id)
+      : await adminApi.banMessage(token, message.id, 'Contenu signalé par la modération')
+    if (res.ok) {
+      setForum((prev) =>
+        prev.map((m) => {
+          if (m.id !== message.id) return m
+          if (message.banned) {
+            const { banned: _b, bannedReason: _r, bannedAt: _a, ...rest } = m
+            return rest
+          }
+          return {
+            ...m,
+            banned: true,
+            bannedReason: 'Contenu signalé par la modération',
+            bannedAt: new Date().toISOString(),
+          }
+        }),
+      )
+      flash(message.banned ? 'Le message n’est plus signalé.' : 'Message banni : il s’affiche désormais en rouge.')
+    } else {
+      flash(res.data.error ?? 'Opération impossible.')
+    }
+  }
+
   if (!sessionChecked) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper">
@@ -594,15 +621,44 @@ export function AdminPage() {
                 {forum.length ? (
                   <ul className="mt-5 space-y-4">
                     {[...forum].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map((m) => (
-                      <li key={m.id} className="rounded-xl border border-rule bg-paper p-4">
+                      <li
+                        key={m.id}
+                        className={
+                          m.banned
+                            ? 'rounded-xl border border-promesse/50 bg-promesse-soft/40 p-4'
+                            : 'rounded-xl border border-rule bg-paper p-4'
+                        }
+                      >
+                        {m.banned && (
+                          <p className="mb-3 rounded-lg bg-promesse px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-paper">
+                            Banni par la modération{m.bannedReason ? ` · ${m.bannedReason}` : ''}
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-medium text-ink">{m.author} <span className="font-normal text-muted">· {m.title}</span></p>
-                          <button type="button" onClick={() => removeItem('forum', m.id, m.title)} className="rounded-md border border-ink/10 px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-promesse/40 hover:bg-promesse-soft hover:text-ink">Supprimer</button>
+                          <p className={`text-sm font-medium ${m.banned ? 'text-promesse' : 'text-ink'}`}>
+                            {m.author} <span className="font-normal text-muted">· {m.title}</span>
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleBanMessage(m)}
+                              className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+                                m.banned
+                                  ? 'border-ink/10 text-muted hover:border-ink/30 hover:bg-paper-deep hover:text-ink'
+                                  : 'border-promesse/30 text-promesse hover:border-promesse/60 hover:bg-promesse-soft hover:text-promesse'
+                              }`}
+                            >
+                              {m.banned ? 'Débannir' : 'Bannir'}
+                            </button>
+                            <button type="button" onClick={() => removeItem('forum', m.id, m.title)} className="rounded-md border border-ink/10 px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-promesse/40 hover:bg-promesse-soft hover:text-ink">Supprimer</button>
+                          </div>
                         </div>
                         <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
                           {m.topic} · {new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(m.createdAt))}
                         </p>
-                        <p className="mt-1 whitespace-pre-line text-[0.95rem] leading-[1.6] text-ink-soft">{m.content}</p>
+                        <p className={`mt-1 whitespace-pre-line text-[0.95rem] leading-[1.6] ${m.banned ? 'text-promesse' : 'text-ink-soft'}`}>
+                          {m.content}
+                        </p>
                       </li>
                     ))}
                   </ul>

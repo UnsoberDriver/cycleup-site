@@ -292,14 +292,31 @@ export function ForumPage() {
           {visibleMessages.length ? (
             <ol className="mt-4 space-y-3">
               {visibleMessages.map((message) => (
-                <li key={message.id} className="modern-surface p-5 md:p-6">
+                <li
+                  key={message.id}
+                  className={
+                    message.banned
+                      ? 'rounded-xl border border-promesse/50 bg-promesse-soft/40 p-5 md:p-6'
+                      : 'modern-surface p-5 md:p-6'
+                  }
+                >
+                  {message.banned && (
+                    <p className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-promesse px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-paper">
+                      Message banni par la modération
+                      {message.bannedReason ? <span className="normal-case tracking-normal opacity-90">· {message.bannedReason}</span> : null}
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-commun-soft text-sm font-semibold text-ink">
+                      <span
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold ${
+                          message.banned ? 'bg-promesse text-paper' : 'bg-commun-soft text-ink'
+                        }`}
+                      >
                         {message.author.slice(0, 1).toUpperCase()}
                       </span>
                       <span>
-                        <span className="block text-sm font-medium">{message.author}</span>
+                        <span className={`block text-sm font-medium ${message.banned ? 'text-promesse' : ''}`}>{message.author}</span>
                         <time dateTime={message.createdAt} className="mt-0.5 block text-[11px] text-muted">
                           {formatDate(message.createdAt)}
                         </time>
@@ -316,8 +333,12 @@ export function ForumPage() {
                       </button>
                     )}
                   </div>
-                  <h3 className="mt-5 text-lg font-semibold">{message.title}</h3>
-                  <p className="mt-2 whitespace-pre-line text-[0.95rem] leading-[1.7] text-ink-soft">{message.content}</p>
+                  <h3 className={`mt-5 text-lg font-semibold ${message.banned ? 'text-promesse line-through decoration-promesse/40' : ''}`}>
+                    {message.title}
+                  </h3>
+                  <p className={`mt-2 whitespace-pre-line text-[0.95rem] leading-[1.7] ${message.banned ? 'text-promesse' : 'text-ink-soft'}`}>
+                    {message.content}
+                  </p>
                 </li>
               ))}
             </ol>

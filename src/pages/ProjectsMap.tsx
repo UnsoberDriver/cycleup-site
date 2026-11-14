@@ -278,9 +278,11 @@ export function MapPage() {
               </Link>
             </div>
           </div>
-          <div className="order-1 min-h-[520px] lg:order-2">
-            <RosalieMap active={active} onSelect={setActive} />
-            <p className="px-5 py-4 text-xs leading-relaxed text-muted lg:px-6">
+          <div className="order-1 flex min-h-[520px] flex-col lg:order-2">
+            <div className="min-h-[520px] flex-1">
+              <RosalieMap active={active} onSelect={setActive} />
+            </div>
+            <p className="border-t border-rule bg-paper px-5 py-4 text-xs leading-relaxed text-muted lg:px-6">
               Pour une demande d'ajout d'emplacement de rosalies, veuillez vous adresser à notre équipe via le{' '}
               <Link to="/contact/" className="prose-link text-ink-soft">
                 formulaire

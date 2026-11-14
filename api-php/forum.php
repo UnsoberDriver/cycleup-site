@@ -26,6 +26,8 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
     // L'empreinte interne du secret d'auteur n'est jamais exposée publiquement.
+    // Le marquage « banni » est en revanche public : les visiteurs voient les
+    // messages signalés, affichés en rouge, plutôt que de les voir disparaître.
     $public = array_map(static function (array $m): array {
         unset($m['owner']);
         return $m;

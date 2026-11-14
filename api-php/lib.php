@@ -291,6 +291,49 @@ function owner_hash(string $secret): string
 }
 
 /**
+ * Marque un message comme banni (contenu insultant ou malveillant signalé).
+ * Le message reste visible mais est signalé en rouge à l'administration.
+ */
+function ban_message(string $id, string $reason = ''): bool
+{
+    $messages = load_data('forum.json', []);
+    $found = false;
+    foreach ($messages as &$m) {
+        if (($m['id'] ?? '') === $id) {
+            $m['banned'] = true;
+            $m['bannedReason'] = $reason !== '' ? $reason : 'Contenu signalé';
+            $m['bannedAt'] = date('c');
+            $found = true;
+            break;
+        }
+    }
+    unset($m);
+    if (!$found) {
+        return false;
+    }
+    return save_data('forum.json', $messages);
+}
+
+/** Retire le marquage « banni » d'un message. */
+function unban_message(string $id): bool
+{
+    $messages = load_data('forum.json', []);
+    $found = false;
+    foreach ($messages as &$m) {
+        if (($m['id'] ?? '') === $id) {
+            unset($m['banned'], $m['bannedReason'], $m['bannedAt']);
+            $found = true;
+            break;
+        }
+    }
+    unset($m);
+    if (!$found) {
+        return false;
+    }
+    return save_data('forum.json', $messages);
+}
+
+/**
  * Liste des IP bannies (api/data/bans.json).
  * Chaque ban : { ip, username, expires (heures, 0 = permanent), reason, created }.
  */

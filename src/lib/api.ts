@@ -7,6 +7,10 @@ export type ForumMessage = {
   title: string
   content: string
   createdAt: string
+  /** Message signalé par la modération : affiché en rouge. */
+  banned?: boolean
+  bannedReason?: string
+  bannedAt?: string
 }
 
 export type ContactEntry = {
@@ -177,6 +181,20 @@ export const adminApi = {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action: 'unban', ip }),
+    }),
+  /** Signale un message du forum comme banni (affiché en rouge). */
+  banMessage: (token: string, id: string, reason?: string) =>
+    call('/api/admin.php', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'ban_message', id, reason }),
+    }),
+  /** Retire le signalement d'un message. */
+  unbanMessage: (token: string, id: string) =>
+    call('/api/admin.php', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'unban_message', id }),
     }),
   /** Liste des bannissements en cours. */
   bans: (token: string) =>
