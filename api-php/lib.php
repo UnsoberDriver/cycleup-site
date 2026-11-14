@@ -206,28 +206,74 @@ function find_user(string $email): ?array
  * Liste des mots insultants / malveillants bloqués à la publication.
  * Liste courte et explicite : on bloque l'injure franche, pas le vocabulaire courant.
  */
+/**
+ * Liste des mots censurés : insultes, grossierités, slurs et menaces.
+ * Le filtrage se fait sur le mot entier (voir find_abuse) pour éviter les
+ * faux positifs : « dispute » n'est pas « pute », « pédale » n'est pas « pédé ».
+ */
 const MODERATION_WORDS = [
-    'connard', 'connasse', 'salope', 'pute', 'putain', 'enculé', 'encule', 'encule',
-    'batard', 'bâtard', 'fils de chienne', 'salopard', 'débile', 'debile', 'imbécile',
-    'imbecile', 'crétin', 'cretin', 'abruti', 'abruti', 'tapette', 'pedale', 'chier',
+    // Insultes courantes
+    'connard', 'connasse', 'conne', 'connerie', 'conneries', 'salope', 'salaud', 'salopard',
+    'pute', 'putes', 'putain', 'puta', 'encule', 'enculé', 'enculer', 'enfoire', 'enfoiré',
+    'batard', 'bâtard', 'bastard', 'merde', 'merdeux', 'merdeuse', 'chier', 'chie',
+    'couilles', 'couille', 'bite', 'débile', 'debile', 'imbécile', 'imbecile',
+    'crétin', 'cretin', 'abruti', 'abrutie', 'idiot', 'idiote', 'tapette', 'pédé',
+    'fils de chienne', 'fils de putain', 'niquer', 'nique', 'débiles', 'imbéciles',
+    // Vulgarités supplémentaires
+    'enculage', 'pute enculée', 'salope de merde', 'crisse', 'foutre', 'niqué',
+    // Discours de haine et injures discriminantes
+    'nègre', 'negre', 'nigger', 'faggot', 'bitch', 'cunt', 'asshole', 'dickhead',
+    'motherfucker', 'whore', 'sale noir', 'salejuif', 'sale arabe', 'sale blanc',
+    'sale blanche', 'sale race', 'sale immigrant', 'sale étrangers',
+    // Menaces
+    'je vais te tuer', 'je te tuerai', 'je vais te défoncer', 'je te défoncerai',
+    'va te faire', 'je vais te casser', 'on va te buter', 'menace de mort',
+    'je te trouve', 'tuer ta mère', 'tuer ta mere', 'je vais te crever',
 ];
 
 /**
- * Renvoie le premier mot insultant trouvé dans les champs donnés.
+ * Motifs regex : spam, pubs, arnaques et liens non sollicités.
+ */
+const MODERATION_PATTERNS = [
+    'lien externe' => '#https?://#i',
+    'adresse web' => '#\bwww\.[a-z0-9-]+\.[a-z]{2,}#i',
+    'adresse e-mail' => '#\b[\w.+-]+@[\w-]+\.[a-z]{2,}\b#i',
+    'numéro de téléphone' => '#\b(?:\+33|0)[1-9](?:[ .-]?\d{2}){4}\b#',
+    'messagerie instantanée' => '#\b(whatsapp|telegram|signal|snapchat|tiktok|discord)\b#i',
+    'jeux d’argent' => '#\b(casino|poker|jackpot|winner|lucky)\b#i',
+    'crypto' => '#\b(bitcoin|btc|ethereum|crypto|forex)\b#i',
+    'produits suspects' => '#\b(viagra|cialis|camgirl|escort|prostitu[eé]e?|pornograph\w*|sexcam)\b#i',
+    'demande de clic' => '#\b(cliquez?\s+ici|clique\s+sur\s+ce\s+lien|gagnez\s+\d+|offre\s+limit[eé]e)\b#i',
+    'répétition anormale' => '#(\w)\1{6,}#u',
+];
+
+/**
+ * Renvoie le premier mot censuré trouvé dans les champs donnés.
+ *
+ * Le filtrage se fait sur le mot entier (frontières de lettres/chiffres), en
+ * tolérant les séparateurs à l’intérieur (« c-o-n-n-a-r-d »), afin de ne pas
+ * bloquer des mots anodins qui contiendraient une insulte par hasard.
  */
 function find_abuse(array $fields): ?string
 {
     foreach ($fields as $field) {
         $s = mb_strtolower((string) $field);
-        // On neutralise les séparateurs (c-o-n-n-a-r-d) pour contrer les contournements.
-        $compact = preg_replace('/[^a-zà-ÿ]+/u', '', $s);
+        if ($s === '') {
+            continue;
+        }
         foreach (MODERATION_WORDS as $word) {
-            $needle = preg_replace('/[^a-zà-ÿ]+/u', '', mb_strtolower($word));
-            if ($needle === '' || $needle === null) {
+            $letters = preg_split('//u', mb_strtolower($word), -1, PREG_SPLIT_NO_EMPTY);
+            if (!$letters) {
                 continue;
             }
-            if (mb_strpos($s, mb_strtolower($word)) !== false || ($compact !== '' && mb_strpos($compact, $needle) !== false)) {
+            $pattern = '/(?<![\p{L}\p{N}])' . implode('[\s\-_.!*\'’]*', array_map('preg_quote', $letters)) . '(?![\p{L}\p{N}])/u';
+            if (preg_match($pattern, $s) === 1) {
                 return $word;
+            }
+        }
+        foreach (MODERATION_PATTERNS as $label => $pattern) {
+            if (preg_match($pattern, $s) === 1) {
+                return $label;
             }
         }
     }
@@ -245,17 +291,23 @@ function reject_if_abusive(array $fields, string $bucket = 'forum'): void
         return;
     }
     $strikes = register_strike($bucket);
+    // On ne réécrit pas le terme censuré dans le message d'erreur : inutile
+    // d'apprendre l'insulte, et le message restepubliable tel quel.
+    $isSpam = in_array($word, array_keys(MODERATION_PATTERNS), true);
+    $reason = $isSpam
+        ? 'Ce message ressemble à du spam ou à une publicité.'
+        : 'Ce message contient une insulte ou un terme injurieux.';
     if ($strikes >= 3) {
-        ban_ip(client_ip(), '', 24, 'Envois répétés de messages insultants (3 avertissements).');
+        ban_ip(client_ip(), '', 24, 'Envois répétés de messages non conformes (3 avertissements).');
         json_out([
             'ok' => false,
-            'error' => 'Publication refusée : langage insultant. Troisième avertissement, votre adresse est bloquée 24 h.',
+            'error' => 'Publication refusée. Troisième avertissement : votre adresse est bloquée 24 h.',
             'banned' => true,
         ], 403);
     }
     json_out([
         'ok' => false,
-        'error' => 'Publication refusée : le message contient une insulte (« ' . $word . ' »). Rédigons autrement.',
+        'error' => 'Publication refusée : ' . $reason . ' Rédigons autrement.',
         'banned' => false,
     ], 422);
 }
